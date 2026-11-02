@@ -19,6 +19,8 @@ export default function OpticalReceiverPage() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const visualizerCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
+  const [starting, setStarting] = useState(false);
+  const [audioLoading, setAudioLoading] = useState(false);
   const [error, setError] = useState("");
   const lastValidFrame = useRef(0);
   const [decoderReady, setDecoderReady] = useState(false);
@@ -66,9 +68,7 @@ export default function OpticalReceiverPage() {
           const allDevs = await navigator.mediaDevices.enumerateDevices();
           const videoDevs = allDevs.filter((d) => d.kind === "videoinput");
           setDevices(videoDevs);
-          if (videoDevs.length > 0) {
-            setSelectedDeviceId(videoDevs[0].deviceId);
-          }
+
         } catch (e) {
           console.warn("Could not enumerate camera devices:", e);
         }
@@ -84,41 +84,70 @@ export default function OpticalReceiverPage() {
     };
   }, []);
 
-  // Start or switch camera stream
+  // Call getUserMedia directly from the tap; audio downloads must not block it.
   const startCamera = async (deviceId?: string) => {
+    setError("");
+    if (!window.isSecureContext) {
+      setError("Camera needs HTTPS on iPhone. Open the HTTPS website, not a local network HTTP address.");
+      return;
+    }
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError("Camera access is unavailable here. Open this page directly in Safari and allow camera access.");
+      return;
+    }
+    setStarting(true);
+    const video = videoRef.current;
+    if (!video) { setStarting(false); return; }
+    const oldStream = video.srcObject as MediaStream | null;
+    oldStream?.getTracks().forEach(track => track.stop());
+    video.srcObject = null;
+    setCameraActive(false);
+    video.muted = true;
+    video.playsInline = true;
+    video.autoplay = true;
+
+    // Start both permission request and audio unlock in the user gesture.
+    const cameraRequest = navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: {
+        ...(deviceId ? { deviceId: { exact: deviceId } } : { facingMode: { ideal: "environment" } }),
+        width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 },
+      },
+    });
+    const audio = audioEngineRef.current;
+    if (audio && !audioLoading) {
+      setAudioLoading(true);
+      const loading = audioReady ? audio.resumeContext().then(() => true) : audio.init();
+      void loading.then(ok => {
+        setAudioReady(ok);
+        setAudioRunning(audio.running);
+        audio.setVolume(volume);
+        if (!ok) setError("Camera is ready, but sound loading failed. Tap Enable / test audio to retry.");
+      }).catch(() => setError("Tap Enable / test audio to unlock sound."))
+        .finally(() => setAudioLoading(false));
+    }
+    let stream: MediaStream | null = null;
     try {
-      setError("");
-      if (!audioReady && audioEngineRef.current) {
-        const ok = await audioEngineRef.current.init();
-        if (!ok) throw new Error("Audio initialization failed. Check the sound files and retry.");
-        await audioEngineRef.current.resumeContext();
-        audioEngineRef.current.setVolume(volume);
-        setAudioReady(true);
-      }
-
-      if (videoRef.current && videoRef.current.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach((track) => track.stop());
-      }
-
-      const constraints: MediaStreamConstraints = {
-        video: {
-          deviceId: deviceId ? { exact: deviceId } : undefined,
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          frameRate: { ideal: 60 },
-        },
-      };
-
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-        setCameraActive(true);
-      }
+      stream = await cameraRequest;
+      video.srcObject = stream;
+      await video.play();
+      setCameraActive(true);
+      const activeId = stream.getVideoTracks()[0]?.getSettings().deviceId;
+      if (activeId) setSelectedDeviceId(activeId);
+      void navigator.mediaDevices.enumerateDevices().then(all => {
+        setDevices(all.filter(d => d.kind === "videoinput"));
+      }).catch(() => {});
     } catch (err) {
-      console.error("Camera access failed:", err);
-      setError(err instanceof Error ? err.message : "Camera unavailable. Allow camera access and retry.");
+      stream?.getTracks().forEach(track => track.stop());
+      video.srcObject = null;
+      const name = err instanceof Error ? err.name : "";
+      setError(name === "NotAllowedError"
+        ? "Camera permission was blocked. In Safari, open Website Settings → Camera → Allow, then tap Start Camera again. If opened inside another app, open this URL in Safari."
+        : name === "NotFoundError" || name === "OverconstrainedError"
+          ? "This camera is unavailable. Select Rear camera (automatic) and retry."
+          : `Camera could not start: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setStarting(false);
     }
   };
 
@@ -378,7 +407,7 @@ export default function OpticalReceiverPage() {
   }, [cameraActive, processFrame]);
 
   // Mouse handlers for manual ROI adjustment & tap-to-snap screen
-  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleMouseDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
@@ -412,7 +441,7 @@ export default function OpticalReceiverPage() {
     manualRoiRef.current = { x: mouseX, y: mouseY, w: 20, h: 10 };
   };
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleMouseMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (aiAutoLockEnabled || !isDraggingRef.current || !dragStartRef.current || !canvasRef.current) return;
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
@@ -436,7 +465,7 @@ export default function OpticalReceiverPage() {
   return (
     <div style={{ maxWidth: 1400, margin: "0 auto", padding: "24px 20px" }}>
       {/* Header */}
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+      <header className="receiver-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
         <div>
           <h1 style={{ fontSize: "1.75rem", fontWeight: 800, letterSpacing: "-0.02em", color: "#ffffff", margin: 0 }}>
             ⚡ DOOM84 <span style={{ color: "#00d8ff" }}>AI OPTICAL AUDIO RECEIVER</span>
@@ -472,11 +501,22 @@ export default function OpticalReceiverPage() {
         </div>
         <p style={{ marginBottom: 0, color: "#8b98ac" }}>Keep the screen level and fill the camera view. The two pixel rows at the very top must be sharp and visible. Manual mode: drag tightly around both barcode rows.</p>
         {error && <p role="alert" style={{ color: "#ff7777" }}>{error}</p>}
-        <button className="custom-btn" disabled={!audioReady} onClick={async () => { await audioEngineRef.current?.resumeContext(); audioEngineRef.current?.playSfx(1, 7, 15, 7); }}>Test speaker</button>
+        <button className="custom-btn" disabled={audioLoading || !decoderReady} onClick={async () => {
+          const audio = audioEngineRef.current;
+          if (!audio) return;
+          setAudioLoading(true);
+          try {
+            const ok = audioReady ? (await audio.resumeContext(), true) : await audio.init();
+            setAudioReady(ok); setAudioRunning(audio.running);
+            if (!ok) throw new Error("Sound files could not load. Tap to retry.");
+            audio.setVolume(volume); audio.playSfx(1, 7, 15, 7);
+          } catch (e) { setError(e instanceof Error ? e.message : String(e)); }
+          finally { setAudioLoading(false); }
+        }}>{audioLoading ? "Loading audio…" : "Enable / test audio"}</button>
       </section>
 
       {/* Main Grid: Camera View + Audio & Telemetry */}
-      <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 24 }}>
+      <div className="receiver-grid" style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 24 }}>
         {/* Left Column: Camera Feed & Tracking HUD */}
         <section className="glass-panel" style={{ overflow: "hidden" }}>
           <div className="glass-panel-header">
@@ -500,6 +540,7 @@ export default function OpticalReceiverPage() {
                   fontSize: "0.8rem",
                 }}
               >
+                <option value="">Rear camera (automatic)</option>
                 {devices.map((d, idx) => (
                   <option key={d.deviceId || idx} value={d.deviceId}>
                     {d.label || `Camera ${idx + 1}`}
@@ -508,8 +549,8 @@ export default function OpticalReceiverPage() {
               </select>
 
               {!cameraActive ? (
-                <button className="custom-btn active" onClick={() => startCamera(selectedDeviceId)}>
-                  ▶ Start Camera
+                <button className="custom-btn active" disabled={starting || !decoderReady} onClick={() => startCamera(selectedDeviceId)}>
+                  {starting ? "Opening camera…" : "▶ Start Camera"}
                 </button>
               ) : (
                 <button className="custom-btn danger" onClick={stopCamera}>
@@ -520,17 +561,20 @@ export default function OpticalReceiverPage() {
           </div>
 
           <div style={{ position: "relative", background: "#000", minHeight: 420, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <video ref={videoRef} playsInline muted style={{ display: "none" }} />
+            <video ref={videoRef} autoPlay playsInline muted aria-label="Camera preview" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }} />
 
             <canvas
               ref={canvasRef}
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
+              onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); handleMouseDown(e); }}
+              onPointerMove={handleMouseMove}
+              onPointerUp={handleMouseUp}
+              onPointerCancel={handleMouseUp}
               style={{
                 width: "100%",
                 height: "auto",
                 display: "block",
+                position: "relative",
+                touchAction: "none",
                 cursor: aiAutoLockEnabled ? "default" : "crosshair",
               }}
             />
