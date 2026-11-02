@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { WasmOpticalDecoder, DecodeResult, DetectedRoi } from "../lib/wasm";
 import { WebAudioEngine, SFX_NAMES, SFX_ICONS } from "../lib/audio";
@@ -464,6 +465,7 @@ export default function OpticalReceiverPage() {
 
   return (
     <div style={{ maxWidth: 1400, margin: "0 auto", padding: "24px 20px" }}>
+      <Link href="/optical" className="custom-btn" style={{ marginBottom: 20 }}>Six-color music transfer demo →</Link>
       {/* Header */}
       <header className="receiver-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
         <div>

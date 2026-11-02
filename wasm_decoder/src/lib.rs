@@ -385,3 +385,5 @@ pub extern "C" fn ai_auto_lock_screen(
     }
     0
 }
+
+mod color;
