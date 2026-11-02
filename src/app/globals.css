@@ -1,0 +1,174 @@
+@import "tailwindcss";
+
+:root {
+  --bg-main: #08090d;
+  --bg-card: rgba(18, 20, 29, 0.82);
+  --bg-card-border: rgba(255, 255, 255, 0.08);
+  --accent-cyan: #00d8ff;
+  --accent-green: #00ff88;
+  --accent-red: #ff3344;
+  --accent-amber: #ffaa00;
+  --text-main: #f0f4f8;
+  --text-dim: #7f8a9a;
+  --text-muted: #4e5765;
+}
+
+body {
+  background-color: var(--bg-main);
+  background-image: 
+    radial-gradient(circle at 15% 20%, rgba(0, 216, 255, 0.05) 0%, transparent 40%),
+    radial-gradient(circle at 85% 75%, rgba(0, 255, 136, 0.04) 0%, transparent 40%);
+  color: var(--text-main);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+/* Glassmorphism Cards */
+.glass-panel {
+  background: var(--bg-card);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--bg-card-border);
+  border-radius: 14px;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6);
+}
+
+.glass-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Status Pill */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.status-locked {
+  background: rgba(0, 255, 136, 0.15);
+  color: #00ff88;
+  border: 1px solid rgba(0, 255, 136, 0.3);
+}
+
+.status-searching {
+  background: rgba(255, 170, 0, 0.15);
+  color: #ffaa00;
+  border: 1px solid rgba(255, 170, 0, 0.3);
+}
+
+.status-idle {
+  background: rgba(255, 255, 255, 0.08);
+  color: #9aa5b5;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-dot.active {
+  background: #00ff88;
+  box-shadow: 0 0 10px #00ff88;
+  animation: pulse 1.5s infinite;
+}
+
+.status-dot.searching {
+  background: #ffaa00;
+  box-shadow: 0 0 10px #ffaa00;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.7; }
+}
+
+/* Custom Sliders & Buttons */
+.custom-btn {
+  background: linear-gradient(135deg, rgba(0, 216, 255, 0.2), rgba(0, 255, 136, 0.2));
+  border: 1px solid rgba(0, 216, 255, 0.4);
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.custom-btn:hover {
+  background: linear-gradient(135deg, rgba(0, 216, 255, 0.35), rgba(0, 255, 136, 0.35));
+  border-color: #00ff88;
+  box-shadow: 0 0 14px rgba(0, 255, 136, 0.3);
+  transform: translateY(-1px);
+}
+
+.custom-btn.active {
+  background: linear-gradient(135deg, #00d8ff, #00ff88);
+  color: #000000;
+  border-color: #00ff88;
+  box-shadow: 0 0 18px rgba(0, 255, 136, 0.5);
+}
+
+.custom-btn.danger {
+  background: rgba(255, 51, 68, 0.2);
+  border-color: rgba(255, 51, 68, 0.4);
+}
+
+.custom-btn.danger:hover {
+  background: rgba(255, 51, 68, 0.35);
+  box-shadow: 0 0 14px rgba(255, 51, 68, 0.4);
+}
+
+/* Telemetry Grid */
+.telemetry-item {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.telemetry-label {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.telemetry-value {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* Event List Scrollbar */
+.custom-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scroll::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
