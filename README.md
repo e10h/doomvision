@@ -28,25 +28,26 @@ pixel rows are not supported. Playback stops after 750 ms without a valid packet
 four scales/positions, checks both layers and payloads, and rejects invalid crops.
 Physical camera focus, permissions, and speaker output still need a hardware test.
 
-## Live six-color music
+## Full-track configurable optical audio
 
-Open `/optical` on the Mac and iPhone. On the Mac, choose Send, load the
-30-second live sample, and start transmission. On the phone, choose Receive +
-play, tap Start camera + audio, then keep the entire white panel and all four
-corner markers visible. Auto-lock locates and perspective-corrects the grid. Each valid packet immediately schedules 125 ms of audio.
-Use Enable audio / test beep to verify the speaker separately.
+Open `/optical` on the Mac and phone. The sender can load the full **I’ll
+Follow the Sun** recording (about 1 minute 49 seconds). Choose audio bitrate,
+optical fps, columns and rows, then Auto-fit grid. Load / encode the full track
+and start transmission. Use Copy matching receiver link to configure the phone.
+On the phone, choose Receive + play, start camera/audio, and keep the whole
+white panel and four square markers visible.
 
-The grid now uses 80 × 24 cells (320 × 96 pixels), with four corner finders
-in a 384 × 160 white panel. It carries 6 kHz mono audio with same-frame capture
-combining, interleaved Reed–Solomon correction, and CRC verification. Playback
-uses a 500–1500 ms adaptive target buffer and faded short-loss concealment.
-UI counters distinguish capture confidence, correction, and playback buffering.
-See [LIVE_PROTOCOL.md](LIVE_PROTOCOL.md) for capacity and limitations.
+The default is 128 kbps mono ADPCM (32 kHz), 8 fps, 168 × 52 = 8,736 colored
+cells/frame. This is a different codec from the original 128 kbps MP3. At 16 fps,
+auto-fit uses 4,480 cells/frame. Grid capacity does not guarantee reliable camera
+capture; use lower bitrate if cells are unresolved. Native source preview on
+the sender is separate from optical reception.
 
-Run `npm run test:robust`, `npm run test:robust-alignment`, and
-`npm run test:playout`. `npm run test:live` and `npm run test:alignment` retain
-coverage of the previous transport. Physical iPhone capture is not yet verified.
+See [CONFIGURABLE_PROTOCOL.md](CONFIGURABLE_PROTOCOL.md) for exact capacity math,
+wire format, controls, limitations, and verification. Run `npm run test:flex`,
+`npm run test:track`, and `npm run test:playout`. Earlier DVA4 and DVC2 tests and
+assets remain for regression coverage; [LIVE_PROTOCOL.md](LIVE_PROTOCOL.md)
+documents the previous fixed-rate transport.
 
-The earlier byte-perfect MP3 transfer is preserved at `/optical/file`; that
-mode buffers the complete file before playback. See
-[COLOR_PROTOCOL.md](COLOR_PROTOCOL.md) and `npm run test:color`.
+The byte-perfect MP3 file-transfer experiment remains at `/optical/file`; it
+buffers the complete file before playback. See [COLOR_PROTOCOL.md](COLOR_PROTOCOL.md).

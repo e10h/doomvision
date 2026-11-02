@@ -15,7 +15,9 @@
     "test:alignment": "node scripts/test-alignment.mjs",
     "test:robust": "node scripts/test-robust.mjs",
     "test:robust-alignment": "node scripts/test-robust-alignment.mjs",
-    "test:playout": "node scripts/test-playout.mjs"
+    "test:playout": "node scripts/test-playout.mjs",
+    "test:flex": "node scripts/test-flex.mjs",
+    "test:track": "node scripts/test-track.mjs"
   },
   "dependencies": {
     "next": "16.4.3",

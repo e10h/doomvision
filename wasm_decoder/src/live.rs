@@ -8,7 +8,7 @@ const STEPS: [i32; 89] = [
     10442, 11487, 12635, 13899, 15289, 16818, 18500, 20350, 22385, 24623, 27086, 29794, 32767,
 ];
 const INDEX: [i32; 8] = [-1, -1, -1, -1, 2, 4, 6, 8];
-fn step(code: u8, predictor: &mut i32, index: &mut i32) -> i16 {
+pub(crate) fn step(code: u8, predictor: &mut i32, index: &mut i32) -> i16 {
     let s = STEPS[*index as usize];
     let mut delta = s >> 3;
     if code & 4 != 0 {
@@ -35,7 +35,7 @@ pub unsafe extern "C" fn encode_audio_block(
 ) -> i32 {
     encode_audio(pcm, count, id, block, total, out, 364, 4000, 500, b"DVS3")
 }
-unsafe fn encode_audio(
+pub(crate) unsafe fn encode_audio(
     pcm: *const i16,
     count: u32,
     id: u32,

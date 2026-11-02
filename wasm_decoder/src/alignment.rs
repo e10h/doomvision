@@ -150,17 +150,17 @@ unsafe fn locate(rgba:*const u8,width:u32,height:u32,out:*mut f32,centers:&[Poin
 }
 #[no_mangle]
 pub unsafe extern "C" fn rectify_live_grid(rgba:*const u8,width:u32,height:u32,quad:*const f32,out:*mut u8)->i32{
-    rectify(rgba,width,height,quad,out,128)
+    rectify(rgba,width,height,quad,out,640,128)
 }
-unsafe fn rectify(rgba:*const u8,width:u32,height:u32,quad:*const f32,out:*mut u8,oh:usize)->i32{
+unsafe fn rectify(rgba:*const u8,width:u32,height:u32,quad:*const f32,out:*mut u8,ow:usize,oh:usize)->i32{
     if rgba.is_null()||quad.is_null()||out.is_null()||width<2||height<2{return -1;}
     let values=std::slice::from_raw_parts(quad,8);let dst=std::array::from_fn(|i|Point{x:values[2*i],y:values[2*i+1]});
-    let src=[Point{x:0.,y:0.},Point{x:640.,y:0.},Point{x:640.,y:oh as f32},Point{x:0.,y:oh as f32}];
+    let src=[Point{x:0.,y:0.},Point{x:ow as f32,y:0.},Point{x:ow as f32,y:oh as f32},Point{x:0.,y:oh as f32}];
     let Some(m)=homography(&src,&dst)else{return 0;};
-    let pixels=std::slice::from_raw_parts(rgba,width as usize*height as usize*4);let output=std::slice::from_raw_parts_mut(out,640*oh*4);
-    for y in 0..oh {for x in 0..640 {
+    let pixels=std::slice::from_raw_parts(rgba,width as usize*height as usize*4);let output=std::slice::from_raw_parts_mut(out,ow*oh*4);
+    for y in 0..oh {for x in 0..ow {
         let Some(c)=rgb(pixels,width as usize,height as usize,map(&m,Point{x:x as f32+0.5,y:y as f32+0.5}))else{return 0;};
-        let i=(y*640+x)*4;for k in 0..3 {output[i+k]=c[k].round() as u8;}output[i+3]=255;
+        let i=(y*ow+x)*4;for k in 0..3 {output[i+k]=c[k].round() as u8;}output[i+3]=255;
     }}1
 }
 
@@ -170,4 +170,8 @@ unsafe fn rectify(rgba:*const u8,width:u32,height:u32,quad:*const f32,out:*mut u
  let grid=[Point{x:32.,y:32.},Point{x:352.,y:32.},Point{x:352.,y:128.},Point{x:32.,y:128.}];
  locate(rgba,width,height,out,&centers,&dots,&grid,true)
 }
-#[no_mangle]pub unsafe extern "C" fn rectify_robust_grid(rgba:*const u8,width:u32,height:u32,quad:*const f32,out:*mut u8)->i32{rectify(rgba,width,height,quad,out,192)}
+#[no_mangle]pub unsafe extern "C" fn rectify_robust_grid(rgba:*const u8,width:u32,height:u32,quad:*const f32,out:*mut u8)->i32{rectify(rgba,width,height,quad,out,640,192)}
+
+#[no_mangle]pub unsafe extern "C" fn rectify_flex_grid(rgba:*const u8,width:u32,height:u32,quad:*const f32,out:*mut u8,ow:u32,oh:u32)->i32{
+ if ow<64||ow>2048||oh<32||oh>1024{return -1;}rectify(rgba,width,height,quad,out,ow as usize,oh as usize)
+}

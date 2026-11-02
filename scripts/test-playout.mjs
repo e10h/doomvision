@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';import{readFileSync}from'node:fs';import ts from'typescript';
 const source=ts.transpileModule(readFileSync(new URL('../src/lib/live.ts',import.meta.url),'utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ES2022}}).outputText;
 const{LivePlayer}=await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
-let context;const starts=[],buffers=[];
+let context;const starts=[],buffers=[],rates=[];
 class Context{
  currentTime=0;state='suspended';destination={};constructor(){context=Object.assign(this,{});}async resume(){this.state='running';}
  createAnalyser(){return{connect(){},getByteTimeDomainData(a){a.fill(128);}};}
- createBuffer(channels,length,rate){assert.equal(rate,16000);const samples=new Float32Array(length);buffers.push(samples);return{getChannelData(){return samples;}};}
+ createBuffer(channels,length,rate){assert.ok([16000,32000].includes(rate));rates.push(rate);const samples=new Float32Array(length);buffers.push(samples);return{getChannelData(){return samples;}};}
  createBufferSource(){return{connect(){},disconnect(){},start(t){starts.push(t);},stop(){}};}
  async close(){this.state='closed';}
 }
@@ -24,5 +24,6 @@ for(const t of [.36,.49,.62]){context.currentTime=t;p.pump();}assert.equal(p.pla
 p.reset();context.currentTime=0;p.push(block(0));for(const t of [.36,.49,.62,.74,.86]){context.currentTime=t;p.pump();}assert.equal(p.concealed,3);assert.equal(p.rebuffers,1);assert.ok(p.latencySeconds>.5);
 context.currentTime=1;p.push(block(9));context.currentTime=1.49;p.pump();assert.equal(p.played,2,'resumes after starvation with a larger buffer');
 p.reset();context.currentTime=0;starts.length=0;p.push(block(239));p.push(block(0));context.currentTime=.36;p.pump();context.currentTime=.49;p.pump();assert.equal(p.played,2);assert.deepEqual(starts,[.5,.625],'loop boundary preserves queued tail');
+p.reset();context.currentTime=0;starts.length=0;const high={samples:new Float32Array(2000).fill(.6),sampleRate:32000,id:99,index:0,total:480};p.push(high);p.push({...high,index:1});context.currentTime=.36;p.pump();context.currentTime=.43;p.pump();assert.deepEqual(starts,[.5,.5625]);assert.equal(rates[rates.length-1],32000);assert.equal(buffers[buffers.length-1].length,2000,'128 kbps retains 32 kHz output at 16 fps');
 context.state='interrupted';await p.enable();assert.equal(p.state,'running');assert.equal(p.playing,false,'interrupted schedule reset');p.dispose();globalThis.setInterval=interval;globalThis.clearInterval=clear;
 console.log('Playout: startup buffer, duplicates, reordered blocks, faded loss concealment, seam crossfade, late drop, adaptive rebuffer, loop continuity, and iOS resume passed.');
