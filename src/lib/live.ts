@@ -3,12 +3,17 @@ export const LIVE_BYTES=364, LIVE_COLS=80, LIVE_ROWS=16, BLOCK_SECONDS=.125;
 export class LiveCodec {
   private image=0;
   private imageSize=0;
+  private quad=0;
+  private rectified=0;
+  public stage='Searching for four alignment markers';
+  public markers=0;
+  public corners:number[]=[];
   private constructor(private w:WebAssembly.Exports,private packet:number,private symbols:number,private pcm:number) {}
   static async create() {
     const r=await fetch('/optical_decoder.wasm',{cache:'no-cache'});
     if(!r.ok) throw new Error(`Decoder HTTP ${r.status}`);
     const {instance:{exports:w}}=await WebAssembly.instantiate(await r.arrayBuffer(),{});
-    if(typeof w.decode_live_roi!=='function') throw new Error('Old decoder cached. Reload the website.');
+    if(typeof w.locate_live_grid!=='function') throw new Error('Old decoder cached. Reload the website.');
     const alloc=w.wasm_alloc as (n:number)=>number;
     return new LiveCodec(w,alloc(LIVE_BYTES),alloc(LIVE_COLS*LIVE_ROWS),alloc(1000));
   }
@@ -28,15 +33,41 @@ export class LiveCodec {
     const v=new DataView(packet.buffer,packet.byteOffset,packet.byteLength);
     return {samples,id:v.getUint32(4,true),index:v.getUint32(8,true),total:v.getUint32(12,true)};
   }
-  decode(data:ImageData,roi:Roi) {
+  private upload(data:ImageData) {
     if(this.imageSize<data.data.length) {
       if(this.image)(this.w.wasm_dealloc as (...p:number[])=>void)(this.image,this.imageSize);
       this.imageSize=data.data.length;
       this.image=(this.w.wasm_alloc as (n:number)=>number)(this.imageSize);
     }
-    const m=this.w.memory as WebAssembly.Memory;
-    new Uint8Array(m.buffer).set(data.data,this.image);
+    new Uint8Array((this.w.memory as WebAssembly.Memory).buffer).set(data.data,this.image);
+  }
+  decode(data:ImageData,roi:Roi) {
+    this.upload(data);
+    this.corners=[];
     const ok=(this.w.decode_live_roi as (...p:number[])=>number)(this.image,data.width,data.height,Math.round(roi.x),Math.round(roi.y),Math.round(roi.w),Math.round(roi.h),this.packet);
+    this.stage=ok===1?'Packet CRC OK': 'Manual crop: color or checksum failed';
+    return ok===1?new Uint8Array((this.w.memory as WebAssembly.Memory).buffer,this.packet,LIVE_BYTES).slice():null;
+  }
+  autoDecode(data:ImageData) {
+    this.upload(data);
+    if(!this.quad) {
+      const alloc=this.w.wasm_alloc as (n:number)=>number;
+      this.quad=alloc(32);this.rectified=alloc(640*128*4);
+    }
+    const found=(this.w.locate_live_grid as (...p:number[])=>number)(this.image,data.width,data.height,this.quad);
+    this.corners=[];
+    this.markers=found===4?4:Math.max(0,found);
+    if(found!==4) {
+      this.stage=found===-2?'Finder candidates found; checking colored orientation dots':'Searching for alignment markers ('+this.markers+'/4)';
+      return null;
+    }
+    const m=this.w.memory as WebAssembly.Memory;
+    this.corners=Array.from(new Float32Array(m.buffer,this.quad,8));
+    const warped=(this.w.rectify_live_grid as (...p:number[])=>number)(this.image,data.width,data.height,this.quad,this.rectified);
+    if(warped!==1){this.stage='Markers found; perspective correction failed';return null;}
+    const ok=(this.w.decode_live_roi as (...p:number[])=>number)(this.rectified,640,128,0,0,640,128,this.packet);
+    const why=['','Grid outside image','Calibration colors blurred or indistinguishable','Cell colors ambiguous: improve focus / reduce glare','Symbol errors: hold steady','Packet header mismatch','Packet CRC failed: motion, refresh, or color errors','Packet CRC OK'][(this.w.last_color_stage as ()=>number)()] ?? 'Decode failed';
+    this.stage='✓ Markers locked → perspective corrected → '+why;
     return ok===1?new Uint8Array(m.buffer,this.packet,LIVE_BYTES).slice():null;
   }
 }

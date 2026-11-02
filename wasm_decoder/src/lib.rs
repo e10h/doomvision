@@ -388,3 +388,4 @@ pub extern "C" fn ai_auto_lock_screen(
 
 mod color;
 mod live;
+mod alignment;

@@ -12,7 +12,9 @@ receiver. The receiver fetches only its code/WASM, never the sample.
 ## Optical grid
 
 Canonical strip: 320 × 64 pixels, 80 columns × 16 lanes, 4 × 4-pixel cells.
-The browser renders at 3× resolution, 960 × 192 pixels. Each lane starts with
+The data grid is surrounded by four alignment finders and colored orientation
+dots in a 384 × 128 white panel; the browser renders it at 3× resolution,
+1152 × 384 pixels. Each lane starts with
 six calibration cells: red, green, blue, yellow, white, black (values 0–5).
 The remaining 74 cells carry base-six digits, read across lanes. Every 4 bytes
 become 13 base-six digits, least significant first, as in DVC2. 91 groups
@@ -58,8 +60,33 @@ regenerate the DVS file from 4 kHz PCM and reports compression SNR. The current
 sample achieves 18.3 dB relative to its downsampled source; bandwidth above
 2 kHz was removed during resampling.
 
-A physical LCD/camera/iPhone test remains necessary. Manual cropping, sufficient
-focus, and a level view are required. There is no perspective correction or
-forward error correction. Display/camera refresh interference, focus, packet
+## Alignment and auto-lock
+
+Auto-lock is on by default. Each corner finder is a 7-module square: black
+outer ring, white inner ring, and a black 3 × 3 center. Four finder centers
+are at (16,16), (368,16), (368,112), and (16,112). Modules are 4 pixels.
+Red, green, blue, and yellow orientation dots (6 × 6 pixels) are centered at
+(16,36), (368,36), (368,92), and (16,92). The grid starts at (32,32).
+
+Rust searches horizontal 1:1:3:1:1 runs and cross-checks them vertically,
+clusters repeated observations, and tests four-finder combinations. Colored
+dots determine orientation, including mirrored views. A projective transform
+maps finder positions to the known layout. Rust resamples the data grid to
+640 × 128 pixels with bilinear interpolation before color decoding. Geometry
+is re-estimated on each processed camera frame; stale locks are not retained.
+This is deterministic computer vision, not a neural model.
+
+The UI distinguishes searching for markers, orientation ambiguity, geometry
+lock, calibration/color ambiguity, symbol/header failures, and CRC failure.
+Manual crop remains a fallback and must exclude the border and markers.
+`npm run test:alignment` exercises actual WASM detection, rectification and
+packet decoding with rotation, perspective, mirroring, color shifts, and mild
+blur/noise, and verifies that an occluded marker or blank scene cannot lock.
+The finder geometry follows the common QR-style finder proportions; this is
+not a QR payload and uses its own detector and transport.
+
+A physical LCD/camera/iPhone test remains necessary. All four markers must be
+visible and in focus. Severe blur, extreme perspective, and lens distortion
+can still prevent decoding. There is no forward error correction. Display/camera refresh interference, focus, packet
 loss, or background timer throttling can produce silence or gaps. A desktop
 screen sender is provided; the calculator sender remains unchanged.

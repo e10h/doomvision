@@ -1,4 +1,9 @@
 //! Six-color transport. Audio is opaque bytes, never sound trigger flags.
+use core::sync::atomic::{AtomicI32, Ordering};
+static LAST_STAGE: AtomicI32 = AtomicI32::new(0);
+#[no_mangle]
+pub extern "C" fn last_color_stage() -> i32 { LAST_STAGE.load(Ordering::Relaxed) }
+
 const COLS: usize = 40;
 const ROWS: usize = 6;
 const PACKET: usize = 60;
@@ -43,6 +48,7 @@ pub unsafe extern "C" fn decode_color_roi(
 }
 
 unsafe fn decode_grid(rgba: *const u8, width:u32, height:u32,x:u32,y:u32,w:u32,h:u32,out:*mut u8,cols:usize,rows:usize,packet_size:usize,magic:&[u8;4]) -> i32 {
+    LAST_STAGE.store(1,Ordering::Relaxed);
     if rgba.is_null() || out.is_null() || w < (cols*2) as u32 || h < rows as u32 ||
         x.checked_add(w).map_or(true, |end| end > width) ||
         y.checked_add(h).map_or(true, |end| end > height) { return -1; }
@@ -67,12 +73,12 @@ unsafe fn decode_grid(rgba: *const u8, width:u32, height:u32,x:u32,y:u32,w:u32,h
         // Six known pilots per row calibrate screen colors and white balance.
         for a in 0..6 { for b in a+1..6 {
             let d: f32 = (0..3).map(|c| (samples[a][c]-samples[b][c]).powi(2)).sum();
-            if d < 1600.0 { return 0; }
+            if d < 1600.0 { LAST_STAGE.store(2,Ordering::Relaxed);return 0; }
         }}
         for col in 6..cols {
             let mut distances: Vec<(usize,f32)> = (0..6).map(|k| (k, (0..3).map(|c| (samples[col][c]-samples[k][c]).powi(2)).sum())).collect();
             distances.sort_by(|a,b| a.1.total_cmp(&b.1));
-            if distances[0].1 > 15000.0 || distances[0].1 * 1.8 + 100.0 > distances[1].1 { return 0; }
+            if distances[0].1 > 15000.0 || distances[0].1 * 1.8 + 100.0 > distances[1].1 { LAST_STAGE.store(3,Ordering::Relaxed);return 0; }
             symbols[row*cols+col] = distances[0].0 as u8;
         }
     }
@@ -83,10 +89,12 @@ unsafe fn decode_grid(rgba: *const u8, width:u32, height:u32,x:u32,y:u32,w:u32,h
             let pos = group * 13 + digit;
             value = value * 6 + symbols[(pos/(cols-6))*cols+6+pos%(cols-6)] as u64;
         }
-        if value > u32::MAX as u64 { return 0; }
+        if value > u32::MAX as u64 { LAST_STAGE.store(4,Ordering::Relaxed);return 0; }
         packet[group*4..group*4+4].copy_from_slice(&(value as u32).to_le_bytes());
     }
-    if &packet[..4] != magic || crc32(&packet[..packet_size-4]) != u32::from_le_bytes(packet[packet_size-4..].try_into().unwrap()) { return 0; }
+    if &packet[..4] != magic {LAST_STAGE.store(5,Ordering::Relaxed);return 0;}
+    if crc32(&packet[..packet_size-4]) != u32::from_le_bytes(packet[packet_size-4..].try_into().unwrap()) {LAST_STAGE.store(6,Ordering::Relaxed);return 0;}
+    LAST_STAGE.store(7,Ordering::Relaxed);
     std::ptr::copy_nonoverlapping(packet.as_ptr(), out, packet_size);
     1
 }

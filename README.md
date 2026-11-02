@@ -32,14 +32,15 @@ Physical camera focus, permissions, and speaker output still need a hardware tes
 
 Open `/optical` on the Mac and iPhone. On the Mac, choose Send, load the
 30-second live sample, and start transmission. On the phone, choose Receive +
-play, tap Start camera + audio, then drag a crop tightly around the entire
-16-row rectangle. Each valid packet immediately schedules 125 ms of audio.
+play, tap Start camera + audio, then keep the entire white panel and all four
+corner markers visible. Auto-lock locates and perspective-corrects the grid. Each valid packet immediately schedules 125 ms of audio.
 Use Enable audio / test beep to verify the speaker separately.
 
 The strip is now 320 × 64 pixels to provide enough bandwidth for 4 kHz mono
 ADPCM in real time. This is intentionally low-fidelity music. Missing packets
-create gaps; zero valid scans means the crop/focus/alignment needs adjustment.
-See [LIVE_PROTOCOL.md](LIVE_PROTOCOL.md) and run `npm run test:live`.
+create gaps; zero valid scans means the marker/focus/alignment diagnostics need attention.
+See [LIVE_PROTOCOL.md](LIVE_PROTOCOL.md); run `npm run test:live` and
+`npm run test:alignment`.
 
 The earlier byte-perfect MP3 transfer is preserved at `/optical/file`; that
 mode buffers the complete file before playback. See
