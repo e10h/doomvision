@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import ts from 'typescript';
 const source=ts.transpileModule(readFileSync(new URL('../src/lib/alignment.ts',import.meta.url),'utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ES2022}}).outputText;
-const {drawAlignment,GRID_X,GRID_Y}=await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
+const {drawAlignmentLegacy:drawAlignment,GRID_X,GRID_Y}=await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
 const {instance:{exports:w}}=await WebAssembly.instantiate(readFileSync(new URL('../public/optical_decoder.wasm',import.meta.url)));
 const packet=w.wasm_alloc(364),symbols=w.wasm_alloc(1280),quad=w.wasm_alloc(32),rectified=w.wasm_alloc(640*128*4),out=w.wasm_alloc(364),image=w.wasm_alloc(960*540*4);
 const sample=readFileSync(new URL('../public/samples/never-gonna-give-you-up-30s.dvs',import.meta.url)).subarray(20*364,21*364);

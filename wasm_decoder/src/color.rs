@@ -23,7 +23,7 @@ pub unsafe extern "C" fn encode_color_packet(bytes: *const u8, symbols: *mut u8)
     encode_grid(bytes, symbols, COLS, ROWS, PACKET)
 }
 
-unsafe fn encode_grid(bytes: *const u8, symbols: *mut u8, cols: usize, rows: usize, packet: usize) -> i32 {
+pub(crate) unsafe fn encode_grid(bytes: *const u8, symbols: *mut u8, cols: usize, rows: usize, packet: usize) -> i32 {
     let bytes = std::slice::from_raw_parts(bytes, packet);
     let out = std::slice::from_raw_parts_mut(symbols, cols * rows);
     out.fill(5);

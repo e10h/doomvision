@@ -12,7 +12,10 @@
     "test:audio": "node scripts/test-audio.mjs",
     "test:color": "node scripts/test-color.mjs",
     "test:live": "node scripts/test-live.mjs",
-    "test:alignment": "node scripts/test-alignment.mjs"
+    "test:alignment": "node scripts/test-alignment.mjs",
+    "test:robust": "node scripts/test-robust.mjs",
+    "test:robust-alignment": "node scripts/test-robust-alignment.mjs",
+    "test:playout": "node scripts/test-playout.mjs"
   },
   "dependencies": {
     "next": "16.4.3",

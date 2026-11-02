@@ -51,6 +51,9 @@ fn rgb(rgba:&[u8],w:usize,h:usize,p:Point)->Option<[f32;3]>{
 }
 #[no_mangle]
 pub unsafe extern "C" fn locate_live_grid(rgba:*const u8,width:u32,height:u32,out:*mut f32)->i32{
+    locate(rgba,width,height,out,&CENTERS,&DOTS,&GRID)
+}
+unsafe fn locate(rgba:*const u8,width:u32,height:u32,out:*mut f32,centers:&[Point;4],dots:&[Point;4],grid:&[Point;4])->i32{
     if rgba.is_null()||out.is_null()||width<160||height<64{return -1;}
     let (w,h)=(width as usize,height as usize);let pixels=std::slice::from_raw_parts(rgba,w*h*4);
     let gray:Vec<u8>=pixels.chunks_exact(4).map(|p|((p[0] as u32*77+p[1] as u32*150+p[2] as u32*29)>>8) as u8).collect();
@@ -84,16 +87,16 @@ pub unsafe extern "C" fn locate_live_grid(rgba:*const u8,width:u32,height:u32,ou
         let area=(0..4).map(|i|p[i].x*p[(i+1)%4].y-p[(i+1)%4].x*p[i].y).sum::<f32>().abs()/2.;if area<2000.{continue;}
         for direction in [1usize,3] {for rotation in 0..4 {
             let dst=std::array::from_fn(|i|p[(rotation+i*direction)%4]);
-            let Some(m)=homography(&CENTERS,&dst)else{continue;};
+            let Some(m)=homography(centers,&dst)else{continue;};
             let mut score=0.;let mut ok=true;
             for i in 0..4 {
-                let Some(color)=rgb(pixels,w,h,map(&m,DOTS[i]))else{ok=false;break;};
+                let Some(color)=rgb(pixels,w,h,map(&m,dots[i]))else{ok=false;break;};
                 let sum=color.iter().sum::<f32>().max(1.);
                 let e=(0..3).map(|c|(color[c]/sum-targets[i][c]).powi(2)).sum::<f32>();
                 if e>0.42{ok=false;break;}score+=e;
             }
             if ok && score<best_score {
-                let q=GRID.map(|g|map(&m,g));
+                let q=grid.map(|g|map(&m,g));
                 if q.iter().any(|p|p.x<0.||p.y<0.||p.x>=w as f32||p.y>=h as f32){continue;}
                 if (q[1].x-q[0].x).hypot(q[1].y-q[0].y)<160.{continue;}
                 best_score=score;best=Some(q);
@@ -104,13 +107,24 @@ pub unsafe extern "C" fn locate_live_grid(rgba:*const u8,width:u32,height:u32,ou
 }
 #[no_mangle]
 pub unsafe extern "C" fn rectify_live_grid(rgba:*const u8,width:u32,height:u32,quad:*const f32,out:*mut u8)->i32{
+    rectify(rgba,width,height,quad,out,128)
+}
+unsafe fn rectify(rgba:*const u8,width:u32,height:u32,quad:*const f32,out:*mut u8,oh:usize)->i32{
     if rgba.is_null()||quad.is_null()||out.is_null()||width<2||height<2{return -1;}
     let values=std::slice::from_raw_parts(quad,8);let dst=std::array::from_fn(|i|Point{x:values[2*i],y:values[2*i+1]});
-    let src=[Point{x:0.,y:0.},Point{x:640.,y:0.},Point{x:640.,y:128.},Point{x:0.,y:128.}];
+    let src=[Point{x:0.,y:0.},Point{x:640.,y:0.},Point{x:640.,y:oh as f32},Point{x:0.,y:oh as f32}];
     let Some(m)=homography(&src,&dst)else{return 0;};
-    let pixels=std::slice::from_raw_parts(rgba,width as usize*height as usize*4);let output=std::slice::from_raw_parts_mut(out,640*128*4);
-    for y in 0..128 {for x in 0..640 {
+    let pixels=std::slice::from_raw_parts(rgba,width as usize*height as usize*4);let output=std::slice::from_raw_parts_mut(out,640*oh*4);
+    for y in 0..oh {for x in 0..640 {
         let Some(c)=rgb(pixels,width as usize,height as usize,map(&m,Point{x:x as f32+0.5,y:y as f32+0.5}))else{return 0;};
         let i=(y*640+x)*4;for k in 0..3 {output[i+k]=c[k].round() as u8;}output[i+3]=255;
     }}1
 }
+
+#[no_mangle]pub unsafe extern "C" fn locate_robust_grid(rgba:*const u8,width:u32,height:u32,out:*mut f32)->i32{
+ let centers=[Point{x:16.,y:16.},Point{x:368.,y:16.},Point{x:368.,y:144.},Point{x:16.,y:144.}];
+ let dots=[Point{x:16.,y:36.},Point{x:368.,y:36.},Point{x:368.,y:124.},Point{x:16.,y:124.}];
+ let grid=[Point{x:32.,y:32.},Point{x:352.,y:32.},Point{x:352.,y:128.},Point{x:32.,y:128.}];
+ locate(rgba,width,height,out,&centers,&dots,&grid)
+}
+#[no_mangle]pub unsafe extern "C" fn rectify_robust_grid(rgba:*const u8,width:u32,height:u32,quad:*const f32,out:*mut u8)->i32{rectify(rgba,width,height,quad,out,192)}

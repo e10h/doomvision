@@ -36,11 +36,16 @@ play, tap Start camera + audio, then keep the entire white panel and all four
 corner markers visible. Auto-lock locates and perspective-corrects the grid. Each valid packet immediately schedules 125 ms of audio.
 Use Enable audio / test beep to verify the speaker separately.
 
-The strip is now 320 × 64 pixels to provide enough bandwidth for 4 kHz mono
-ADPCM in real time. This is intentionally low-fidelity music. Missing packets
-create gaps; zero valid scans means the marker/focus/alignment diagnostics need attention.
-See [LIVE_PROTOCOL.md](LIVE_PROTOCOL.md); run `npm run test:live` and
-`npm run test:alignment`.
+The grid now uses 80 × 24 cells (320 × 96 pixels), with four corner finders
+in a 384 × 160 white panel. It carries 6 kHz mono audio with same-frame capture
+combining, interleaved Reed–Solomon correction, and CRC verification. Playback
+uses a 500–1500 ms adaptive target buffer and faded short-loss concealment.
+UI counters distinguish capture confidence, correction, and playback buffering.
+See [LIVE_PROTOCOL.md](LIVE_PROTOCOL.md) for capacity and limitations.
+
+Run `npm run test:robust`, `npm run test:robust-alignment`, and
+`npm run test:playout`. `npm run test:live` and `npm run test:alignment` retain
+coverage of the previous transport. Physical iPhone capture is not yet verified.
 
 The earlier byte-perfect MP3 transfer is preserved at `/optical/file`; that
 mode buffers the complete file before playback. See

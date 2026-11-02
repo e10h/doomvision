@@ -1,7 +1,7 @@
 "use client";
 import {useEffect,useRef,useState} from 'react';
 import Link from 'next/link';
-import {drawAlignment,GRID_X,GRID_Y} from '../../lib/alignment';
+import {drawAlignment,GRID_X,GRID_Y,FRAME_WIDTH,FRAME_HEIGHT} from '../../lib/alignment';
 import {COLORS,Roi} from '../../lib/color';
 import {LiveCodec,LivePlayer,LIVE_BYTES,LIVE_COLS,LIVE_ROWS} from '../../lib/live';
 
@@ -12,17 +12,17 @@ export default function LiveOptical() {
   const [ready,setReady]=useState(false),[error,setError]=useState('');
   const [data,setData]=useState<Uint8Array|null>(null),[sending,setSending]=useState(false),[frame,setFrame]=useState(0);
   const [camera,setCamera]=useState(false),[starting,setStarting]=useState(false);
-  const [stats,setStats]=useState({valid:0,rejected:0,index:-1,played:0,late:0,audio:'off',playing:false});
+  const [stats,setStats]=useState({valid:0,rejected:0,index:-1,played:0,late:0,audio:'off',playing:false,captures:0,corrected:0,confidence:0,fused:false,concealed:0,bufferMs:500,rebuffers:0});
   const codec=useRef<LiveCodec|null>(null),player=useRef<LivePlayer|null>(null);
   const strip=useRef<HTMLCanvasElement|null>(null),video=useRef<HTMLVideoElement|null>(null);
   const preview=useRef<HTMLCanvasElement|null>(null),scope=useRef<HTMLCanvasElement|null>(null);
   const stream=useRef<MediaStream|null>(null),crop=useRef<Roi|null>(null),drag=useRef<{x:number;y:number}|null>(null);
   useEffect(()=>{
     let active=true; const p=new LivePlayer();player.current=p;
-    LiveCodec.create().then(c=>{if(active){codec.current=c;setReady(true);}}).catch(e=>setError(String(e)));
-    return()=>{active=false;stream.current?.getTracks().forEach(t=>t.stop());p.dispose();};
+    LiveCodec.create().then(c=>{if(active){codec.current=c;setReady(true);}else c.dispose();}).catch(e=>setError(String(e)));
+    return()=>{active=false;stream.current?.getTracks().forEach(t=>t.stop());p.dispose();codec.current?.dispose();};
   },[]);
-  const stop=()=>{stream.current?.getTracks().forEach(t=>t.stop());stream.current=null;player.current?.reset();setCamera(false);};
+  const stop=()=>{stream.current?.getTracks().forEach(t=>t.stop());stream.current=null;player.current?.reset();codec.current?.resetFusion();setCamera(false);};
   const enable=async(test=false)=>{try{await player.current?.enable();if(test)player.current?.testTone();setStats(s=>({...s,audio:player.current?.state??'off'}));}catch(e){setError(String(e));}};
   const start=async()=>{
     setStarting(true);setError('');
@@ -54,15 +54,16 @@ export default function LiveOptical() {
   },[mode,data,sending,ready]);
   useEffect(()=>{
     if(mode!=='receive' || !camera)return;
-    let raf=0,last=0,ui=0,valid=0,rejected=0,index=-1;
+    let raf=0,last=0,ui=0,valid=0,rejected=0,index=-1,lastVideoTime=-1;
     const tick=(now:number)=>{
-      raf=requestAnimationFrame(tick);if(now-last<45)return;last=now;
+      raf=requestAnimationFrame(tick);if(now-last<30)return;last=now;
       const v=video.current,canvas=preview.current,c=codec.current,p=player.current;
       if(!v || !canvas || !c || !p || !v.videoWidth || v.readyState<2)return;
+      if(v.currentTime===lastVideoTime)return;lastVideoTime=v.currentTime;
       if(canvas.width!==v.videoWidth || canvas.height!==v.videoHeight){canvas.width=v.videoWidth;canvas.height=v.videoHeight;}
       const ctx=canvas.getContext('2d',{willReadFrequently:true});if(!ctx)return;
       ctx.drawImage(v,0,0);
-      if(!crop.current)crop.current={x:canvas.width*.05,y:canvas.height*.25,w:canvas.width*.9,h:canvas.width*.9*.2};
+      if(!crop.current)crop.current={x:canvas.width*.05,y:canvas.height*.25,w:canvas.width*.9,h:canvas.width*.9*.3};
       const roi=crop.current;
       try{
         const pixels=ctx.getImageData(0,0,canvas.width,canvas.height);
@@ -75,7 +76,7 @@ export default function LiveOptical() {
       } else if(!autoLock) ctx.strokeRect(roi.x,roi.y,roi.w,roi.h);
       const osc=scope.current,oscCtx=osc?.getContext('2d');
       if(osc && oscCtx){const wave=p.waveform();oscCtx.fillStyle='#08090d';oscCtx.fillRect(0,0,osc.width,osc.height);oscCtx.strokeStyle='#00ff88';oscCtx.beginPath();wave.forEach((n,i)=>{const x=i*osc.width/wave.length,y=n/255*osc.height;if(i)oscCtx.lineTo(x,y);else oscCtx.moveTo(x,y);});oscCtx.stroke();}
-      if(now-ui>200){ui=now;setTracking(c.stage);setStats({valid,rejected,index,played:p.played,late:p.late,audio:p.state,playing:p.playing});}
+      if(now-ui>200){ui=now;setTracking(c.stage);setStats({valid,rejected,index,played:p.played,late:p.late,audio:p.state,playing:p.playing,captures:c.captures,corrected:c.corrected,confidence:c.confidence,fused:c.fused,concealed:p.concealed,bufferMs:Math.round(p.latencySeconds*1000),rebuffers:p.rebuffers});}
     };
     raf=requestAnimationFrame(tick);return()=>cancelAnimationFrame(raf);
   },[mode,camera,autoLock]);
@@ -83,7 +84,7 @@ export default function LiveOptical() {
   return <main style={{maxWidth:1100,margin:'0 auto',padding:20}}>
     <Link href="/" style={{color:'#00d8ff'}}>← Doom receiver</Link>
     <h1 style={{fontSize:28,fontWeight:800,marginTop:20}}>Live six-color audio</h1>
-    <p>Each verified packet becomes 125 milliseconds of sound immediately. No full-file wait.</p>
+    <p>Each verified packet carries 125 milliseconds of audio. A short adaptive buffer smooths playback; no full-file wait.</p>
     <div style={{display:'flex',gap:12,flexWrap:'wrap',margin:'20px 0'}}>
       <button className="custom-btn" onClick={()=>{stop();setMode('send');}}>Send on Mac</button>
       <button className="custom-btn" onClick={()=>{setSending(false);setMode('receive');}}>Receive + play on iPhone</button>
@@ -92,10 +93,10 @@ export default function LiveOptical() {
     {error && <p role="alert" style={{color:'#ff8888'}}>{error}</p>}
     {mode==='send'?<section className="glass-panel" style={{padding:20}}>
       <h2>Transmit the 30-second sample</h2>
-      <button className="custom-btn" disabled={!ready} onClick={async()=>{try{setSending(false);const r=await fetch('/samples/never-gonna-give-you-up-30s.dvs');if(!r.ok)throw new Error(`Sample HTTP ${r.status}`);const b=new Uint8Array(await r.arrayBuffer());if(!b.length || b.length%LIVE_BYTES)throw new Error('Invalid sample stream');setData(b);setError('');}catch(e){setError(String(e));}}}>Load 30-second live sample</button>
+      <button className="custom-btn" disabled={!ready} onClick={async()=>{try{setSending(false);const r=await fetch('/samples/never-gonna-give-you-up-30s.dva4');if(!r.ok)throw new Error(`Sample HTTP ${r.status}`);const b=new Uint8Array(await r.arrayBuffer());if(!b.length || b.length%LIVE_BYTES)throw new Error('Invalid sample stream');setData(b);setError('');}catch(e){setError(String(e));}}}>Load 30-second live sample</button>
       {data && <>
-        <p>Rick Astley · first 30 seconds · 240 independent audio packets · 8 packets / second.</p>
-        <canvas ref={strip} width={1152} height={384} aria-label="Live six-color audio strip" style={{width:'100%',height:'auto',display:'block',imageRendering:'pixelated',margin:'20px 0'}}/>
+        <p>Rick Astley · first 30 seconds · 240 audio packets · 8 packets / second · 6 kHz mono · Reed–Solomon protection.</p>
+        <canvas ref={strip} width={FRAME_WIDTH*3} height={FRAME_HEIGHT*3} aria-label="Live six-color audio strip" style={{width:'100%',height:'auto',display:'block',imageRendering:'pixelated',margin:'20px 0'}}/>
         <button className="custom-btn active" onClick={()=>setSending(s=>!s)}>{sending?'Pause':'Start live transmission'}</button>
         <p>Packet {frame+1} / {data.length/LIVE_BYTES} · {(frame/8).toFixed(1)}s / 30s · {sending?'Transmitting; repeats every 30 seconds':'Paused; start transmission for the phone to hear music'}</p>
       </>}
@@ -116,11 +117,13 @@ export default function LiveOptical() {
       <p role="status">{tracking}</p>
       {!autoLock && <p>Manual fallback: drag tightly around only the colored data grid, excluding the white border and corner markers.</p>}
       <p>{stats.valid} checksum-valid scans · {stats.played} audio blocks scheduled · {stats.rejected} rejected scans · {stats.late} late blocks · audio: {stats.audio}</p>
+      <p>Capture combining: {stats.captures} observations of this frame{stats.fused?' · combined recovery':''} · color confidence {stats.confidence}% · FEC repaired {stats.corrected} bytes this scan.</p>
+      <p>Playback: target buffer {stats.bufferMs} ms · {stats.concealed} concealed blocks · {stats.rebuffers} rebuffer events.</p>
       {stats.index>=0 && <p>Received music position: {(stats.index/8).toFixed(1)}s / 30s</p>}
       <canvas ref={scope} width={640} height={80} aria-label="Decoded audio waveform" style={{width:'100%',height:80,background:'#08090d'}}/>
       <p>iPhone: raise media volume and check Control Center’s speaker route. If needed, turn Silent Mode off and tap Enable audio again.</p>
     </section>}
-    <p style={{color:'#8b98ac',marginTop:20}}>Experimental 320 × 64 strip: 80 columns × 16 lanes, six colors, per-lane calibration, CRC-32, and independent Rust ADPCM decoding. 4 kHz mono audio is intentionally low fidelity. A 250 ms buffer smooths timing; missing packets make brief gaps. Four alignment finders and colored orientation dots provide automatic perspective alignment; manual crop is available as a fallback.</p>
+    <p style={{color:'#8b98ac',marginTop:20}}>Experimental 320 × 96 grid: 80 columns × 24 lanes. Confidence-weighted same-frame combining, repeated CRC-protected IDs, interleaved Reed–Solomon correction, and packet CRC. 6 kHz mono audio is intentionally low fidelity. An adaptive 500–1500 ms target buffer and faded repetition smooth brief losses. Four alignment finders and colored orientation dots provide automatic perspective alignment; manual crop is available as a fallback.</p>
     <Link href="/optical/file" style={{color:'#00d8ff'}}>Previous byte-perfect MP3 file-transfer experiment →</Link>
   </main>;
 }
