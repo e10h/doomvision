@@ -78,7 +78,7 @@ export class LiveCodec {
     let ok=(this.w[this.profile?'flex_receive':'receive_robust_roi'] as (...p:number[])=>number)(this.combiner,image,width,height,Math.round(roi.x),Math.round(roi.y),Math.round(roi.w),Math.round(roi.h),this.packet,this.metrics);
     const m=this.w.memory as WebAssembly.Memory;
     let metrics=new Uint32Array(m.buffer,this.metrics,5);
-    if(this.profile&&ok!==1&&metrics[0]===3){
+    if(this.profile&&ok!==1&&(metrics[0]===2||metrics[0]===3)){
       const saved=Array.from(metrics);
       for(const [dx,dy]of[[-1,0],[0,-1],[-1,-1],[1,0],[0,1],[1,1],[-1,1],[1,-1]]){
         const trial=(this.w.flex_trial as (...n:number[])=>number)(this.combiner,image,width,height,Math.round(roi.x),Math.round(roi.y),Math.round(roi.w),Math.round(roi.h),this.packet,this.metrics,dx,dy);
@@ -87,7 +87,7 @@ export class LiveCodec {
       metrics=new Uint32Array(m.buffer,this.metrics,5);if(ok!==1)metrics.set(saved);
     }
     this.failureCode=metrics[0];this.captures=metrics[1];this.corrected=metrics[2];this.confidence=metrics[3];this.fused=metrics[0]===5;
-    this.stage=['Grid bounds invalid','Calibration colors blurred','Protected frame ID unreadable','Collecting same-frame captures; FEC / CRC not yet valid','Frame verified with Reed–Solomon + CRC','Combined captures verified with Reed–Solomon + CRC','Mixed frame IDs: capture rejected'][metrics[0]]??'Decode failed';
+    this.stage=['Grid bounds invalid','Calibration colors blurred','Protected frame ID unreadable — check matching settings / try larger cells','Collecting same-frame captures; FEC / CRC not yet valid','Frame verified with Reed–Solomon + CRC','Combined captures verified with Reed–Solomon + CRC','Mixed frame IDs: capture rejected'][metrics[0]]??'Decode failed';
     return ok===1?new Uint8Array(m.buffer,this.packet,this.profile?.packetBytes??LIVE_BYTES).slice():null;
   }
   autoDecode(data:ImageData) {

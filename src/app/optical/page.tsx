@@ -13,6 +13,7 @@ export default function LiveOptical() {
   const [paramsReady,setParamsReady]=useState(false),[origin,setOrigin]=useState('');
   const [sourceBuffer,setSourceBuffer]=useState<AudioBuffer|null>(null),[duration,setDuration]=useState(0),[trackStatus,setTrackStatus]=useState('Full track not loaded');
   const sourceId=useRef(0);
+  const lastCameraFrame=useRef<ImageData|null>(null);
   const [autoLock,setAutoLock]=useState(true);
   const [tracking,setTracking]=useState('Searching for four alignment markers');
   const [mode,setMode]=useState<'send'|'receive'>('send');
@@ -102,6 +103,7 @@ export default function LiveOptical() {
       const roi=crop.current;
       try{
         const pixels=ctx.getImageData(0,0,canvas.width,canvas.height);
+        lastCameraFrame.current=pixels;
         const packet=autoLock?c.autoDecode(pixels):drag.current?null:c.decode(pixels,roi);
         if(packet){const block=c.audio(packet);valid++;index=block.index;total=block.total;p.push(block);}else rejected++;
       }catch(e){setError(String(e));}
@@ -134,6 +136,7 @@ export default function LiveOptical() {
         <label>Rows <input type="number" min={8} max={128} value={settings.rows} onChange={e=>{const v=e.target.valueAsNumber;if(Number.isFinite(v))apply({...settings,rows:Math.max(8,Math.min(128,Math.round(v)))});}} style={{width:76,background:'#111',padding:8}}/></label>
         <button className="custom-btn" onClick={()=>apply(autoFit(settings.kbps,settings.fps))}>Auto-fit grid</button>
         <button className="custom-btn" onClick={()=>apply(autoFit(128,settings.fps))}>Set 128 kbps</button>
+        <button className="custom-btn" onClick={()=>apply(autoFit(24,8))}>Larger cells: 24 kbps test</button>
       </div>
       <p>{plan.dots.toLocaleString()} colored cells / frame ({settings.cols} × {settings.rows}) · {plan.audioBytes.toLocaleString()} audio bytes / frame · {plan.lanes} RS lanes · {plan.capacityBytes.toLocaleString()} / {plan.envelopeBytes.toLocaleString()} encoded bytes available / required.</p>
       <p style={{color:plan.fits?'#00ff88':'#ff8888'}}>{plan.fits?'✓ Grid has enough capacity':'Grid too small — Auto-fit or increase columns / rows'}</p>
@@ -163,6 +166,11 @@ export default function LiveOptical() {
       <div style={{display:'flex',gap:12,flexWrap:'wrap',marginBottom:16}}>
         <button className="custom-btn active" disabled={!ready || !plan.fits || starting} onClick={camera?stop:start}>{starting?'Opening…':camera?'Stop reception':'Start camera + audio'}</button>
         <button className="custom-btn" onClick={()=>enable(true)}>Enable audio / test beep</button>
+        <button className="custom-btn" disabled={!camera} onClick={()=>{
+          const frame=lastCameraFrame.current;if(!frame)return;
+          const canvas=document.createElement('canvas');canvas.width=frame.width;canvas.height=frame.height;const ctx=canvas.getContext('2d');if(!ctx)return;ctx.putImageData(frame,0,0);
+          canvas.toBlob(blob=>{if(!blob)return;const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`optical-${settings.kbps}k-${settings.fps}fps-${settings.cols}x${settings.rows}.png`;a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);},'image/png');
+        }}>Save diagnostic camera frame</button>
         <button className="custom-btn" onClick={()=>{drag.current=null;setAutoLock(v=>!v);}}>{autoLock?"Auto-lock ON":"Manual crop mode"}</button>
       </div>
       <div style={{position:'relative',background:'black',minHeight:180}}>

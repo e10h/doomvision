@@ -9,6 +9,15 @@ for(const kbps of[24,32,48,64,96,128])for(const fps of[4,8,16]){
  for(let y=0;y<ih;y++)for(let x=0;x<iw;x++){const rgb=colors[symbols[Math.floor(y/4)*p.cols+Math.floor(x/4)]].map((n,k)=>Math.round(n*[.8,.7,.9][k]+[10,18,12][k]));data.set([...rgb,255],(y*iw+x)*4);}
  const decoded=c.decode({width:iw,height:ih,data},{x:0,y:0,w:iw,h:ih});assert.ok(decoded,`${kbps}/${fps}: ${c.stage}`);assert.deepEqual(decoded,packet);const audio=c.audio(decoded);assert.equal(audio.samples.length,p.samples);assert.equal(audio.sampleRate,p.sampleRate);assert.equal(audio.samples.length/audio.sampleRate,1/fps);c.dispose();
 }
+// A dense-grid sampling offset can damage header cells while pilot colors
+// remain readable. The receiver must refine sampling before requiring an ID.
+{
+ const p=profile(autoFit(128,8)),c=await LiveCodec.create(p),samples=new Int16Array(p.samples).fill(8000),packet=c.encodeAudio(samples,337,0,10),codes=c.encode(packet),width=p.cols*4,height=p.rows*4,data=new Uint8ClampedArray(width*height*4);
+ for(let y=0;y<height;y++)for(let x=0;x<width;x++){const col=Math.floor(x/4),sourceCol=col<6?col:Math.min(p.cols-1,Math.floor((x+2)/4));data.set([...colors[codes[Math.floor(y/4)*p.cols+sourceCol]],255],(y*width+x)*4);}
+ const{instance:{exports:w}}=await WebAssembly.instantiate(wasm),state=w.flex_new(p.cols,p.rows,p.lanes),image=w.wasm_alloc(data.length),out=w.wasm_alloc(p.packetBytes),metrics=w.wasm_alloc(20);new Uint8Array(w.memory.buffer).set(data,image);
+ assert.equal(w.flex_receive(state,image,width,height,0,0,width,height,out,metrics),0);assert.equal(new Uint32Array(w.memory.buffer,metrics,5)[0],2,'unrefined sampling has unreadable protected ID');
+ const recovered=c.decode({width,height,data},{x:0,y:0,w:width,h:height});assert.ok(recovered,'protected ID must be recoverable with sampling refinement: '+c.stage);assert.deepEqual(recovered,packet);w.flex_free(state);c.dispose();console.log('Protected-ID sampling regression passed.');
+}
 const p=profile(autoFit(128,8));assert.equal(p.dots,8736);assert.equal(p.audioBytes,2000);assert.equal(p.lanes,10);assert.equal(p.envelopeBytes,2580);
 assert.equal(profile({...p,cols:80,rows:24}).fits,false);await assert.rejects(()=>LiveCodec.create(profile({...p,cols:80,rows:24})),/Grid too small/);assert.deepEqual(readSettings('?kbps=128&fps=8&cols=168&rows=52'),autoFit(128,8));
 if(process.argv[2] && process.argv[2]!=='--screenshot'){

@@ -65,7 +65,9 @@ Panel geometry remains 384 × 160, with the data grid at (32,32), size 320 × 96
 The number of cells within that rectangle changes; markers stay fixed.
 Perspective rectification uses at least 4 output pixels/cell and at least
 640 × 192 pixels. Optional ±1-pixel sampling-phase trials correct dense-grid
-screen-scaling offsets. Trials use temporary state, do not count as separate
+screen-scaling offsets. Trials run for unreadable protected identities as well as damaged packet
+bodies. A sampling error must not prevent attempting to recover the identity.
+Trials use temporary state, do not count as separate
 camera captures, and must pass full protected-ID, RS, and CRC verification.
 They never introduce cross-phase votes into the temporal combiner.
 
@@ -111,3 +113,13 @@ tests include 32 kHz audio and 16 fps timing. Previous protocol tests remain.
 The whole-source 128 kbps encode/decode test measured 30.9 dB ADPCM SNR relative
 to a 32 kHz resampling of the source. That is not an MP3 quality comparison.
 Real iPhone capture at these densities remains unverified.
+
+## Reception troubleshooting
+
+Use the matching receiver link after changing settings. The **Larger cells:
+24 kbps test** preset uses 80 × 24 cells at 8 fps, keeping the full track while
+reducing the density for a reception test. No automatic downgrade is applied.
+**Save diagnostic camera frame** downloads the last raw camera image before
+tracking overlays. Its filename includes kbps, fps, columns, and rows, so it
+can be replayed against exactly the same receiver profile when investigating
+hardware-only failures.
