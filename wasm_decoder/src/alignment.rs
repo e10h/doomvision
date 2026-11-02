@@ -3,6 +3,11 @@
 struct Point { x:f32,y:f32 }
 #[derive(Clone,Copy)]
 struct Finder {p:Point,scale:f32,hits:u32}
+static mut ROBUST_CANDIDATES:[[f32;8];8]=[[0.;8];8];
+static mut ROBUST_COUNT:usize=0;
+#[no_mangle]
+pub unsafe extern "C" fn robust_alignment_candidates(out:*mut f32)->i32{if out.is_null(){return 0;}let n=ROBUST_COUNT;std::ptr::copy_nonoverlapping(std::ptr::addr_of!(ROBUST_CANDIDATES) as *const f32,out,n*8);n as i32}
+
 const CENTERS:[Point;4]=[Point{x:16.,y:16.},Point{x:368.,y:16.},Point{x:368.,y:112.},Point{x:16.,y:112.}];
 const DOTS:[Point;4]=[Point{x:16.,y:36.},Point{x:368.,y:36.},Point{x:368.,y:92.},Point{x:16.,y:92.}];
 const GRID:[Point;4]=[Point{x:32.,y:32.},Point{x:352.,y:32.},Point{x:352.,y:96.},Point{x:32.,y:96.}];
@@ -51,9 +56,10 @@ fn rgb(rgba:&[u8],w:usize,h:usize,p:Point)->Option<[f32;3]>{
 }
 #[no_mangle]
 pub unsafe extern "C" fn locate_live_grid(rgba:*const u8,width:u32,height:u32,out:*mut f32)->i32{
-    locate(rgba,width,height,out,&CENTERS,&DOTS,&GRID)
+    locate(rgba,width,height,out,&CENTERS,&DOTS,&GRID,false)
 }
-unsafe fn locate(rgba:*const u8,width:u32,height:u32,out:*mut f32,centers:&[Point;4],dots:&[Point;4],grid:&[Point;4])->i32{
+unsafe fn locate(rgba:*const u8,width:u32,height:u32,out:*mut f32,centers:&[Point;4],dots:&[Point;4],grid:&[Point;4],fallback:bool)->i32{
+    if fallback{ROBUST_COUNT=0;}
     if rgba.is_null()||out.is_null()||width<160||height<64{return -1;}
     let (w,h)=(width as usize,height as usize);let pixels=std::slice::from_raw_parts(rgba,w*h*4);
     let gray:Vec<u8>=pixels.chunks_exact(4).map(|p|((p[0] as u32*77+p[1] as u32*150+p[2] as u32*29)>>8) as u8).collect();
@@ -78,6 +84,7 @@ unsafe fn locate(rgba:*const u8,width:u32,height:u32,out:*mut f32,centers:&[Poin
     finders.retain(|f|f.hits>=3);finders.sort_by_key(|f|std::cmp::Reverse(f.hits));finders.truncate(8);
     if finders.len()<4{return finders.len() as i32;}
     let mut best_score=0.85f32;let mut best=None;
+    let mut geometric_score=f32::MAX;let mut geometric_points=None;
     let targets=[[1.,0.,0.],[0.,1.,0.],[0.,0.,1.],[0.5,0.5,0.]];
     for a in 0..finders.len(){for b in a+1..finders.len(){for c in b+1..finders.len(){for d in c+1..finders.len(){
         let chosen=[finders[a],finders[b],finders[c],finders[d]];
@@ -85,6 +92,20 @@ unsafe fn locate(rgba:*const u8,width:u32,height:u32,out:*mut f32,centers:&[Poin
         let mut p=chosen.map(|f|f.p);let cx=p.iter().map(|v|v.x).sum::<f32>()/4.;let cy=p.iter().map(|v|v.y).sum::<f32>()/4.;
         p.sort_by(|a,b|(a.y-cy).atan2(a.x-cx).total_cmp(&(b.y-cy).atan2(b.x-cx)));
         let area=(0..4).map(|i|p[i].x*p[(i+1)%4].y-p[(i+1)%4].x*p[i].y).sum::<f32>().abs()/2.;if area<2000.{continue;}
+        if fallback {
+            // Finder module size and separation select a plausible panel without
+            // requiring any color dot. Verified packet identity resolves orientation.
+            let unit=chosen.iter().map(|f|f.scale).sum::<f32>()/4.;
+            let lengths:Vec<f32>=(0..4).map(|i|(p[i].x-p[(i+1)%4].x).hypot(p[i].y-p[(i+1)%4].y)/unit).collect();
+            let long=(centers[1].x-centers[0].x).abs()/4.;
+            let short=(centers[3].y-centers[0].y).abs()/4.;
+            for shift in 0..2 {
+                let score=(0..4).map(|i|(lengths[i]/if (i+shift)%2==0{long}else{short}).ln().abs()).sum::<f32>();
+                let support=chosen.iter().map(|f|f.hits as f32).sum::<f32>();
+                let ranked=score+4./support;
+                if score<2.5 && ranked<geometric_score {geometric_score=ranked;geometric_points=Some(p);}
+            }
+        }
         for direction in [1usize,3] {for rotation in 0..4 {
             let dst=std::array::from_fn(|i|p[(rotation+i*direction)%4]);
             let Some(m)=homography(centers,&dst)else{continue;};
@@ -103,6 +124,28 @@ unsafe fn locate(rgba:*const u8,width:u32,height:u32,out:*mut f32,centers:&[Poin
             }
         }}
     }}}}
+    if fallback {
+        if let Some(p)=geometric_points {
+            let mut n=0;
+            // Put the dot-ranked orientation first when available, but never use
+            // dots to reject an otherwise plausible panel.
+
+            for direction in [1usize,3] {for rotation in 0..4 {
+                let dst=std::array::from_fn(|i|p[(rotation+i*direction)%4]);
+                let Some(m)=homography(centers,&dst)else{continue;};let q=grid.map(|g|map(&m,g));
+                if q.iter().any(|v|!v.x.is_finite()||!v.y.is_finite()||v.x<0.||v.y<0.||v.x>=w as f32||v.y>=h as f32){continue;}
+                let values:[f32;8]=std::array::from_fn(|i|if i%2==0{q[i/2].x}else{q[i/2].y});
+                if (0..n).any(|j|(0..8).map(|i|(ROBUST_CANDIDATES[j][i]-values[i]).abs()).sum::<f32>()<1.){continue;}
+                if n<8{ROBUST_CANDIDATES[n]=values;n+=1;}
+            }}
+            if let Some(q)=best {
+                let values:[f32;8]=std::array::from_fn(|i|if i%2==0{q[i/2].x}else{q[i/2].y});
+                if let Some(index)=(0..n).find(|&j|(0..8).map(|i|(ROBUST_CANDIDATES[j][i]-values[i]).abs()).sum::<f32>()<1.){let first=ROBUST_CANDIDATES[0];ROBUST_CANDIDATES[0]=ROBUST_CANDIDATES[index];ROBUST_CANDIDATES[index]=first;}
+            }
+            ROBUST_COUNT=n;
+            if n>0{std::ptr::copy_nonoverlapping(std::ptr::addr_of!(ROBUST_CANDIDATES) as *const f32,out,8);return 4;}
+        }
+    }
     if let Some(q)=best {for i in 0..4 {*out.add(2*i)=q[i].x;*out.add(2*i+1)=q[i].y;}4}else{-2}
 }
 #[no_mangle]
@@ -125,6 +168,6 @@ unsafe fn rectify(rgba:*const u8,width:u32,height:u32,quad:*const f32,out:*mut u
  let centers=[Point{x:16.,y:16.},Point{x:368.,y:16.},Point{x:368.,y:144.},Point{x:16.,y:144.}];
  let dots=[Point{x:16.,y:36.},Point{x:368.,y:36.},Point{x:368.,y:124.},Point{x:16.,y:124.}];
  let grid=[Point{x:32.,y:32.},Point{x:352.,y:32.},Point{x:352.,y:128.},Point{x:32.,y:128.}];
- locate(rgba,width,height,out,&centers,&dots,&grid)
+ locate(rgba,width,height,out,&centers,&dots,&grid,true)
 }
 #[no_mangle]pub unsafe extern "C" fn rectify_robust_grid(rgba:*const u8,width:u32,height:u32,quad:*const f32,out:*mut u8)->i32{rectify(rgba,width,height,quad,out,192)}

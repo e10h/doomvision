@@ -5,6 +5,8 @@ export class LiveCodec {
   private imageSize=0;
   private quad=0;
   private rectified=0;
+  private candidates=0;
+  private failureCode=0;
   public stage='Searching for four alignment markers';
   public markers=0;
   public captures=0;
@@ -19,7 +21,7 @@ export class LiveCodec {
     const r=await fetch('/optical_decoder.wasm',{cache:'no-cache'});
     if(!r.ok) throw new Error(`Decoder HTTP ${r.status}`);
     const {instance:{exports:w}}=await WebAssembly.instantiate(await r.arrayBuffer(),{});
-    if(typeof w.receive_robust_roi!=='function') throw new Error('Old decoder cached. Reload the website.');
+    if(typeof w.robust_alignment_candidates!=='function') throw new Error('Old decoder cached. Reload the website.');
     const alloc=w.wasm_alloc as (n:number)=>number;
     const codec=new LiveCodec(w,alloc(LIVE_BYTES),alloc(LIVE_COLS*LIVE_ROWS),alloc(1500));
     codec.combiner=(w.robust_new as ()=>number)();codec.metrics=alloc(20);return codec;
@@ -59,7 +61,7 @@ export class LiveCodec {
     const ok=(this.w.receive_robust_roi as (...p:number[])=>number)(this.combiner,image,width,height,Math.round(roi.x),Math.round(roi.y),Math.round(roi.w),Math.round(roi.h),this.packet,this.metrics);
     const m=this.w.memory as WebAssembly.Memory;
     const metrics=new Uint32Array(m.buffer,this.metrics,5);
-    this.captures=metrics[1];this.corrected=metrics[2];this.confidence=metrics[3];this.fused=metrics[0]===5;
+    this.failureCode=metrics[0];this.captures=metrics[1];this.corrected=metrics[2];this.confidence=metrics[3];this.fused=metrics[0]===5;
     this.stage=['Grid bounds invalid','Calibration colors blurred','Protected frame ID unreadable','Collecting same-frame captures; FEC / CRC not yet valid','Frame verified with Reed–Solomon + CRC','Combined captures verified with Reed–Solomon + CRC','Mixed frame IDs: capture rejected'][metrics[0]]??'Decode failed';
     return ok===1?new Uint8Array(m.buffer,this.packet,LIVE_BYTES).slice():null;
   }
@@ -68,22 +70,35 @@ export class LiveCodec {
     this.upload(data);
     if(!this.quad) {
       const alloc=this.w.wasm_alloc as (n:number)=>number;
-      this.quad=alloc(32);this.rectified=alloc(640*192*4);
+      this.quad=alloc(32);this.rectified=alloc(640*192*4);this.candidates=alloc(256);
     }
     const found=(this.w.locate_robust_grid as (...p:number[])=>number)(this.image,data.width,data.height,this.quad);
     this.corners=[];
     this.markers=found===4?4:Math.max(0,found);
     if(found!==4) {
-      this.stage=found===-2?'Finder candidates found; checking colored orientation dots':'Searching for alignment markers ('+this.markers+'/4)';
+      this.stage=found===-2?'Square finders seen; checking panel geometry':'Searching for alignment markers ('+this.markers+'/4)';
       return null;
     }
+    const count=(this.w.robust_alignment_candidates as (p:number)=>number)(this.candidates);
     const m=this.w.memory as WebAssembly.Memory;
-    this.corners=Array.from(new Float32Array(m.buffer,this.quad,8));
-    const warped=(this.w.rectify_robust_grid as (...p:number[])=>number)(this.image,data.width,data.height,this.quad,this.rectified);
-    if(warped!==1){this.stage='Markers found; perspective correction failed';return null;}
-    const packet=this.receive(this.rectified,640,192,{x:0,y:0,w:640,h:192});
-    this.stage='✓ Markers locked → '+this.stage;
-    return packet;
+    const candidates=Array.from(new Float32Array(m.buffer,this.candidates,count*8));
+    let best:{rank:number;corners:number[];stage:string;captures:number;corrected:number;confidence:number;fused:boolean}|null=null;
+    for(let i=0;i<count;i++) {
+      const corners=candidates.slice(i*8,i*8+8);
+      new Float32Array(m.buffer,this.quad,8).set(corners);
+      const warped=(this.w.rectify_robust_grid as (...p:number[])=>number)(this.image,data.width,data.height,this.quad,this.rectified);
+      if(warped!==1)continue;
+      const packet=this.receive(this.rectified,640,192,{x:0,y:0,w:640,h:192});
+      const rank=packet?100:this.failureCode===6?40:this.failureCode===3?30:this.failureCode===2?10:0;
+      if(!best||rank>best.rank)best={rank,corners,stage:this.stage,captures:this.captures,corrected:this.corrected,confidence:this.confidence,fused:this.fused};
+      if(packet){this.corners=corners;this.stage='✓ Markers + packet orientation verified → '+this.stage;return packet;}
+      // A CRC-protected identity establishes orientation even while the body
+      // needs further captures. Never use another orientation to pollute it.
+      if(this.failureCode===3||this.failureCode===6)break;
+    }
+    if(best){this.corners=best.corners;this.stage='Four markers found → '+best.stage;this.captures=best.captures;this.corrected=best.corrected;this.confidence=best.confidence;this.fused=best.fused;}
+    else this.stage='Four markers found; grid perspective could not be sampled';
+    return null;
   }
 }
 export type AudioBlock=ReturnType<LiveCodec['audio']>;

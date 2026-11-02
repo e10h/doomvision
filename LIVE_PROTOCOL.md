@@ -20,8 +20,12 @@ Each finder has a black outer 7 × 7 square, white 5 × 5 square, black 3 × 3
 center; modules are 4 pixels. Orientation dots (6 × 6) are red, green, blue,
 yellow at (16,36), (368,36), (368,124), (16,124).
 
-Rust detects the finders, checks colored orientation, and projectively
-resamples the grid to 640 × 192. Every lane starts with six pilots:
+Rust detects the finders and projectively resamples the grid to 640 × 192.
+Colored dots optionally rank orientations; unreadable dots never prevent
+decoding. The receiver tries rotations and mirrored orientations and accepts
+one only after protected frame identity, Reed–Solomon, and packet CRC verify.
+A valid protected identity can establish orientation while more same-frame
+captures are collected. Square finder geometry must still be plausible. Every lane starts with six pilots:
 red, green, blue, yellow, white, black (values 0–5). Remaining 74 cells/lane
 carry base-six digits. Each 4-byte little-endian integer becomes 13 digits,
 least significant digit first. 136 groups carry a 544-byte envelope; 8 unused
@@ -103,7 +107,9 @@ corrected bytes, target buffer, concealed blocks, and rebuffer events.
   into an exact packet, header majority repair, mixed IDs, and frame isolation.
 - `npm run test:robust-alignment`: actual WASM detection, perspective correction,
   and FEC/CRC under rotation, perspective, mirroring, tint, blur/noise, display
-  gamut variation, and occlusion. Optional RGBA screenshot arguments also
+  gamut variation, missing orientation dots (including rotation and mirroring),
+  and occlusion. The test also exercises the production TypeScript receiver
+  wrapper, not only the raw Rust exports. Optional RGBA screenshot arguments also
   validate the real browser-rendered first packet.
 - `npm run test:playout`: buffering, duplicates, reordering, loss fades,
   crossfade continuity, late packets, starvation recovery, loops, iOS resume.
