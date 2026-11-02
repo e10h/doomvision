@@ -14,7 +14,8 @@ not stereo, and not the same psychoacoustic codec or quality guarantee.
 The original MP3 can be previewed explicitly on the sender with native audio
 controls; that preview is separate from optical reception.
 
-Available audio rates: 24, 32, 48, 64, 96, 128 kbps (6–32 kHz mono).
+Available audio rates: 1, 2, 4, 8, 12, 16, 24, 32, 48, 64, 96, 128 kbps
+(250 Hz–32 kHz mono).
 Available optical frame rates: 4, 8, 16 fps. Frame duration is 1/fps.
 Final audio is padded with zeros to a full frame; the 128 kbps / 8 fps profile
 uses 871 frames, 108.875 seconds, about 22 ms longer than the source.
@@ -24,16 +25,18 @@ uses 871 frames, 108.875 seconds, about 22 ms longer than the source.
 For selected kbps K and frame rate F:
 
 1. Sample rate R = K × 250; samples/frame = R/F.
-2. Audio bytes/frame A = ceil(samples/frame / 2).
+2. Maximum samples/frame = ceil(R/F); audio bytes/frame A = ceil(max samples / 2).
 3. Application RS lanes L = ceil((A + 30) / 223).
-4. Application packet bytes P = L × 223.
-5. Protected envelope bytes E = round_up_to_4(L × 255 + 30).
+4. Data bytes/lane D = A+30 for L=1 (shortened RS), otherwise 223.
+   Application packet bytes P = L × D.
+5. Protected envelope bytes E = round_up_to_4(L × (D+32) + 30).
 6. Data color cells required = E/4 × 13.
 7. For C columns and H rows, usable cells = (C − 6) × H. Six cells per row
    calibrate red, green, blue, yellow, white, and black.
 
 Each four bytes become thirteen base-six symbols, least significant first.
-Reed–Solomon protects each 223-byte application lane with 32 parity bytes.
+Reed–Solomon protects each application lane with 32 parity bytes. Shortened
+lanes omit known leading zeros while retaining the same correction strength.
 Three protected 10-byte identities occupy the envelope top/middle/bottom.
 The four square alignment markers are outside the counted data grid.
 
@@ -92,13 +95,13 @@ Each lane corrects up to 16 erroneous bytes. The frame index limit is 65535.
 Sample preparation downmixes to mono and uses a 32-tap, 256-phase windowed-sinc
 resampler to limit aliasing before Rust ADPCM encoding. Stream ID incorporates
 the source CRC, sample rate, and fps. The player derives frame duration from
-sample count/rate and retains 32 kHz output buffers for the 128 kbps path.
+the fps metadata and retains 32 kHz output buffers for the 128 kbps path.
 Capture combining, error correction, marker orientation fallback, adaptive
 buffering, and short-loss concealment remain enabled.
 
 ## Verification
 
-`npm run test:flex` round-trips all 18 bitrate/fps profiles through the real
+`npm run test:flex` round-trips all 36 bitrate/fps profiles through the real
 Rust optical encoder, synthetic RGB capture, decoder, and audio decoder. It
 checks the 128 kbps capacity math, settings URLs, and undersized-grid blocking.
 An optional s16le 32 kHz PCM path checks every audio block of the full song.
@@ -123,3 +126,34 @@ reducing the density for a reception test. No automatic downgrade is applied.
 tracking overlays. Its filename includes kbps, fps, columns, and rows, so it
 can be replayed against exactly the same receiver profile when investigating
 hardware-only failures.
+
+## Extreme low-rate mode
+
+Set 1 kbps or choose 1, 2, 4, 8, 12, or 16 kbps in the bitrate menu. The 1 kbps
+profile is 250 samples/second mono ADPCM, retaining only frequencies below
+roughly 125 Hz. It is useful for low-density optical experiments and bass/rhythm,
+not a music-quality equivalent to a 1 kbps perceptual codec.
+
+At 8 fps the audio alternates 31/32 samples per frame, preserving exactly 250
+samples over one second. Each frame starts at floor(index × rate / fps), and
+its actual sample count is encoded in the header and checked by Rust. The
+player resamples each block onto its fixed frame-time slot, preventing clock
+drift from integer rounding. Half-byte padding adds a small wire overhead.
+
+Single-lane RS blocks are shortened to actual packet needs. The encoder prepends
+known zeros up to 223 data bytes, applies RS(255,223), and transmits only actual
+data plus 32 parity bytes. The decoder restores zeros before repair and verifies
+they remain zero. Sixteen byte errors per shortened word remain correctable.
+
+At 1 kbps, 8 fps: 46 application bytes → 78 RS bytes + 30 repeated-ID bytes =
+108 protected bytes/frame. Auto-fit is 40 × 11 = 440 color cells. Optical wire
+rate is 6.912 kbps before base-six representation and pilots; **1 kbps refers
+to waveform data**, not the total protected optical link. The full source is
+cascaded through half-rate anti-alias filters before the final 250 Hz resample.
+This avoids folding the original high frequencies into the low-rate output.
+
+Rust tests cover shortened data lengths 31, 38, 46, 62, 94, 155, 218, and 223,
+16-error repair and excessive-error rejection. JS tests cover all sample counts
+in a second at 1 kbps for every fps, stable playout timing, bass preservation,
+and suppression of high-frequency aliasing. Source and full-track duration are
+unchanged; only audio fidelity and packet/grid size change.

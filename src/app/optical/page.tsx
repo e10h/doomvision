@@ -2,7 +2,7 @@
 import {useEffect,useRef,useState,useMemo} from 'react';
 import Link from 'next/link';
 import {drawAlignment,GRID_X,GRID_Y,FRAME_WIDTH,FRAME_HEIGHT} from '../../lib/alignment';
-import {BITRATES,FRAME_RATES,DEFAULT_SETTINGS,readSettings,autoFit,profile,LinkSettings} from '../../lib/profile';
+import {BITRATES,FRAME_RATES,DEFAULT_SETTINGS,readSettings,autoFit,profile,LinkSettings,frameSamples} from '../../lib/profile';
 import {monoPcm} from '../../lib/track';
 import {COLORS,Roi,crc32} from '../../lib/color';
 import {LiveCodec,LivePlayer} from '../../lib/live';
@@ -42,12 +42,13 @@ export default function LiveOptical() {
         codec.current=c;setReady(true);setError('');
         if(!sourceBuffer){setTrackStatus('Full track not loaded');return;}
         setTrackStatus('Encoding the full track…');await new Promise(r=>setTimeout(r,0));
-        const pcm=monoPcm(sourceBuffer,plan.sampleRate),total=Math.ceil(pcm.length/plan.samples);
+        const pcm=monoPcm(sourceBuffer,plan.sampleRate),total=Math.ceil(pcm.length*plan.fps/plan.sampleRate);
         if(total>65535)throw new Error('Track too long for this frame rate');
         const packets=new Uint8Array(total*plan.packetBytes),id=(sourceId.current^plan.sampleRate^plan.fps)>>>0;
         for(let i=0;i<total;i++){
           if(!active)return;
-          const samples=new Int16Array(plan.samples);samples.set(pcm.subarray(i*plan.samples,(i+1)*plan.samples));
+          const start=Math.floor(i*plan.sampleRate/plan.fps),count=frameSamples(plan.sampleRate,plan.fps,i);
+          const samples=new Int16Array(count);samples.set(pcm.subarray(start,start+count));
           packets.set(c.encodeAudio(samples,id,i,total),i*plan.packetBytes);
           if(i%32===0)await new Promise(r=>setTimeout(r,0));
         }
@@ -136,9 +137,11 @@ export default function LiveOptical() {
         <label>Rows <input type="number" min={8} max={128} value={settings.rows} onChange={e=>{const v=e.target.valueAsNumber;if(Number.isFinite(v))apply({...settings,rows:Math.max(8,Math.min(128,Math.round(v)))});}} style={{width:76,background:'#111',padding:8}}/></label>
         <button className="custom-btn" onClick={()=>apply(autoFit(settings.kbps,settings.fps))}>Auto-fit grid</button>
         <button className="custom-btn" onClick={()=>apply(autoFit(128,settings.fps))}>Set 128 kbps</button>
+        <button className="custom-btn" onClick={()=>apply(autoFit(1,settings.fps))}>Set 1 kbps 😈</button>
         <button className="custom-btn" onClick={()=>apply(autoFit(24,8))}>Larger cells: 24 kbps test</button>
       </div>
-      <p>{plan.dots.toLocaleString()} colored cells / frame ({settings.cols} × {settings.rows}) · {plan.audioBytes.toLocaleString()} audio bytes / frame · {plan.lanes} RS lanes · {plan.capacityBytes.toLocaleString()} / {plan.envelopeBytes.toLocaleString()} encoded bytes available / required.</p>
+      <p>{plan.dots.toLocaleString()} colored cells / frame ({settings.cols} × {settings.rows}) · up to {plan.audioBytes.toLocaleString()} audio bytes / frame · {plan.lanes} RS lanes · {plan.capacityBytes.toLocaleString()} / {plan.envelopeBytes.toLocaleString()} encoded bytes available / required.</p>
+      {settings.kbps<=4 && <p>Extreme low-rate mode: {plan.sampleRate} samples/second, with sound limited to roughly {plan.sampleRate/2} Hz. The bitrate describes audio payload; error correction and framing add overhead.</p>}
       <p style={{color:plan.fits?'#00ff88':'#ff8888'}}>{plan.fits?'✓ Grid has enough capacity':'Grid too small — Auto-fit or increase columns / rows'}</p>
       <p>128 kbps at 8 fps auto-fits about 8,700 cells. This is {plan.sampleRate.toLocaleString()} Hz mono ADPCM; the source is a 128 kbps MP3, a different codec. More dots mean smaller camera targets; higher frame rates leave fewer captures to combine.</p>
       <button className="custom-btn" onClick={async()=>{try{await navigator.clipboard.writeText(receiverUrl);setTrackStatus('Matching receiver link copied');}catch{setError('Copy the receiver link shown below.');}}}>Copy matching receiver link</button>

@@ -27,11 +27,11 @@ export class LiveCodec {
     const r=await fetch('/optical_decoder.wasm',{cache:'no-cache'});
     if(!r.ok) throw new Error(`Decoder HTTP ${r.status}`);
     const {instance:{exports:w}}=await WebAssembly.instantiate(await r.arrayBuffer(),{});
-    if(typeof w.robust_alignment_candidates!=='function'||(p&&typeof w.flex_new!=='function')) throw new Error('Old decoder cached. Reload the website.');
+    if(typeof w.robust_alignment_candidates!=='function'||(p&&typeof w.flex_new_profile!=='function')) throw new Error('Old decoder cached. Reload the website.');
     const alloc=w.wasm_alloc as (n:number)=>number;
     const codec=new LiveCodec(w,alloc(p?.packetBytes??LIVE_BYTES),alloc(p?p.cols*p.rows:LIVE_COLS*LIVE_ROWS),alloc(p?p.packetBytes*4:1500));
     codec.profile=p??null;codec.rectWidth=p?Math.max(640,p.cols*4):640;codec.rectHeight=p?Math.max(192,p.rows*4):192;
-    codec.combiner=p?(w.flex_new as (...n:number[])=>number)(p.cols,p.rows,p.lanes):(w.robust_new as ()=>number)();
+    codec.combiner=p?(w.flex_new_profile as (...n:number[])=>number)(p.cols,p.rows,p.lanes,p.laneData):(w.robust_new as ()=>number)();
     if(!codec.combiner)throw new Error('Invalid grid configuration');codec.metrics=alloc(20);return codec;
   }
   encode(packet:Uint8Array) {
@@ -50,12 +50,12 @@ export class LiveCodec {
     if(count<=0)throw new Error('Invalid audio block');
     const samples=Float32Array.from(new Int16Array(m.buffer,this.pcm,count),v=>v/32768);
     const v=new DataView(packet.buffer,packet.byteOffset,packet.byteLength);
-    return {samples,sampleRate:v.getUint32(16,true),id:v.getUint32(4,true),index:v.getUint32(8,true),total:v.getUint32(12,true)};
+    return {samples,frameSeconds:1/(v.getUint8(25)||8),sampleRate:v.getUint32(16,true),id:v.getUint32(4,true),index:v.getUint32(8,true),total:v.getUint32(12,true)};
   }
   encodeAudio(samples:Int16Array,id:number,index:number,total:number) {
-    const p=this.profile;if(!p||samples.length!==p.samples)throw new Error('Invalid audio profile');
-    const memory=this.w.memory as WebAssembly.Memory;new Int16Array(memory.buffer,this.pcm,p.samples).set(samples);
-    const ok=(this.w.encode_audio_v5 as (...n:number[])=>number)(this.pcm,p.samples,id,index,total,p.sampleRate,p.fps,p.packetBytes,this.packet);
+    const p=this.profile,expected=p?Math.floor((index+1)*p.sampleRate/p.fps)-Math.floor(index*p.sampleRate/p.fps):0;if(!p||samples.length!==expected)throw new Error('Invalid audio profile');
+    const memory=this.w.memory as WebAssembly.Memory;new Int16Array(memory.buffer,this.pcm,samples.length).set(samples);
+    const ok=(this.w.encode_audio_v5 as (...n:number[])=>number)(this.pcm,samples.length,id,index,total,p.sampleRate,p.fps,p.packetBytes,this.packet);
     if(ok!==1)throw new Error('Audio block could not fit selected frame');
     return new Uint8Array(memory.buffer,this.packet,p.packetBytes).slice();
   }
@@ -72,7 +72,7 @@ export class LiveCodec {
     this.corners=[];
     return this.receive(this.image,data.width,data.height,roi);
   }
-  resetFusion() {if(this.combiner)(this.w[this.profile?'flex_free':'robust_free'] as (p:number)=>void)(this.combiner);this.combiner=this.profile?(this.w.flex_new as (...n:number[])=>number)(this.profile.cols,this.profile.rows,this.profile.lanes):(this.w.robust_new as ()=>number)();}
+  resetFusion() {if(this.combiner)(this.w[this.profile?'flex_free':'robust_free'] as (p:number)=>void)(this.combiner);this.combiner=this.profile?(this.w.flex_new_profile as (...n:number[])=>number)(this.profile.cols,this.profile.rows,this.profile.lanes,this.profile.laneData):(this.w.robust_new as ()=>number)();}
   dispose() {if(this.combiner)(this.w[this.profile?'flex_free':'robust_free'] as (p:number)=>void)(this.combiner);this.combiner=0;}
   private receive(image:number,width:number,height:number,roi:Roi) {
     let ok=(this.w[this.profile?'flex_receive':'receive_robust_roi'] as (...p:number[])=>number)(this.combiner,image,width,height,Math.round(roi.x),Math.round(roi.y),Math.round(roi.w),Math.round(roi.h),this.packet,this.metrics);
@@ -174,7 +174,7 @@ export class LivePlayer {
   }
   push(b:AudioBlock):boolean {
     if(!this.ctx||!this.analyser||this.ctx.state!=='running')return false;
-    if(this.stream!==b.id){this.reset();this.stream=b.id;this.blockSeconds=b.samples.length/b.sampleRate;this.next=b.index;this.base=this.ctx.currentTime+this.latencySeconds-b.index*this.blockSeconds;}
+    if(this.stream!==b.id){this.reset();this.stream=b.id;this.blockSeconds=b.frameSeconds??b.samples.length/b.sampleRate;this.next=b.index;this.base=this.ctx.currentTime+this.latencySeconds-b.index*this.blockSeconds;}
     let index=this.epoch*b.total+b.index;
     if(this.highest-index>b.total/2){this.epoch++;index+=b.total;}
     else if(index-this.highest>b.total/2&&this.epoch>0)index-=b.total;
@@ -206,8 +206,8 @@ export class LivePlayer {
         this.missing++;this.concealed++;
       }
       const outputRate=Math.max(16000,rate),fadeSamples=Math.round(outputRate*.003);
-      const buffer=this.ctx.createBuffer(1,Math.round(samples.length/rate*outputRate),outputRate),out=buffer.getChannelData(0);
-      for(let i=0;i<out.length;i++){const p=i*rate/outputRate,j=Math.floor(p),f=p-j;out[i]=samples[j]*(1-f)+samples[Math.min(j+1,samples.length-1)]*f;if(i<fadeSamples){const t=(i+1)/fadeSamples;out[i]=this.lastTail*(1-t)+out[i]*t;}}
+      const buffer=this.ctx.createBuffer(1,Math.round(this.blockSeconds*outputRate),outputRate),out=buffer.getChannelData(0);
+      for(let i=0;i<out.length;i++){const p=i*samples.length/out.length,j=Math.floor(p),f=p-j;out[i]=samples[j]*(1-f)+samples[Math.min(j+1,samples.length-1)]*f;if(i<fadeSamples){const t=(i+1)/fadeSamples;out[i]=this.lastTail*(1-t)+out[i]*t;}}
       this.lastTail=out[out.length-1];
       const source=this.ctx.createBufferSource();source.buffer=buffer;source.connect(this.analyser);this.sources.add(source);source.onended=()=>{this.sources.delete(source);source.disconnect();};
       const start=Math.max(this.ctx.currentTime+.005,when);source.start(start);this.end=start+this.blockSeconds;this.next++;

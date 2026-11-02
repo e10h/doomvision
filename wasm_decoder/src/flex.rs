@@ -5,15 +5,23 @@ struct Profile {
     cols: usize,
     rows: usize,
     lanes: usize,
+    lane_data: usize,
     packet: usize,
     n: usize,
 }
 impl Profile {
     fn new(cols: usize, rows: usize, lanes: usize) -> Option<Self> {
-        if !(32..=256).contains(&cols) || !(8..=128).contains(&rows) || !(1..=32).contains(&lanes) {
+        Self::shortened(cols, rows, lanes, 223)
+    }
+    fn shortened(cols: usize, rows: usize, lanes: usize, lane_data: usize) -> Option<Self> {
+        if !(32..=256).contains(&cols)
+            || !(8..=128).contains(&rows)
+            || !(1..=32).contains(&lanes)
+            || !(31..=223).contains(&lane_data)
+        {
             return None;
         }
-        let n = (lanes * 255 + 30 + 3) / 4 * 4;
+        let n = (lanes * (lane_data + 32) + 30 + 3) / 4 * 4;
         if (cols - 6) * rows / 13 * 4 < n {
             return None;
         }
@@ -21,7 +29,8 @@ impl Profile {
             cols,
             rows,
             lanes,
-            packet: lanes * 223,
+            lane_data,
+            packet: lanes * lane_data,
             n,
         })
     }
@@ -31,7 +40,7 @@ impl Profile {
     fn positions(self) -> Vec<usize> {
         (0..self.n)
             .filter(|i| !self.copies().iter().any(|s| *i >= *s && *i < *s + 10))
-            .take(self.lanes * 255)
+            .take(self.lanes * (self.lane_data + 32))
             .collect()
     }
 }
@@ -85,9 +94,12 @@ fn pack(data: &[u8], p: Profile) -> Option<Vec<u8>> {
     }
     let positions = p.positions();
     for lane in 0..p.lanes {
-        let code = rs::encode(&data[lane * 223..(lane + 1) * 223]);
-        for i in 0..255 {
-            e[positions[i * p.lanes + lane]] = code[i];
+        let start = 223 - p.lane_data;
+        let mut padded = [0u8; 223];
+        padded[start..].copy_from_slice(&data[lane * p.lane_data..(lane + 1) * p.lane_data]);
+        let code = rs::encode(&padded);
+        for i in 0..p.lane_data + 32 {
+            e[positions[i * p.lanes + lane]] = code[start + i];
         }
     }
     Some(e)
@@ -98,11 +110,15 @@ fn repair(e: &[u8], p: Profile, out: &mut [u8]) -> Option<usize> {
     let mut repaired = 0;
     for lane in 0..p.lanes {
         let mut code = [0; 255];
-        for i in 0..255 {
-            code[i] = e[positions[i * p.lanes + lane]];
+        let start = 223 - p.lane_data;
+        for i in 0..p.lane_data + 32 {
+            code[start + i] = e[positions[i * p.lanes + lane]];
         }
         repaired += rs::repair(&mut code)?;
-        out[lane * 223..(lane + 1) * 223].copy_from_slice(&code[..223]);
+        if code[..start].iter().any(|&b| b != 0) {
+            return None;
+        }
+        out[lane * p.lane_data..(lane + 1) * p.lane_data].copy_from_slice(&code[start..223]);
     }
     if &out[..4] != b"DVA5"
         || crc32(&out[..p.packet - 4])
@@ -131,6 +147,27 @@ pub extern "C" fn flex_new(cols: u32, rows: u32, lanes: u32) -> *mut Flex {
         votes: vec![[0.; 6]; p.cols * p.rows],
         captures: 0,
     }))
+}
+#[no_mangle]
+pub extern "C" fn flex_new_profile(cols: u32, rows: u32, lanes: u32, lane_data: u32) -> *mut Flex {
+    let Some(p) = Profile::shortened(
+        cols as usize,
+        rows as usize,
+        lanes as usize,
+        lane_data as usize,
+    ) else {
+        return std::ptr::null_mut();
+    };
+    Box::into_raw(Box::new(Flex {
+        p,
+        id: None,
+        votes: vec![[0.; 6]; p.cols * p.rows],
+        captures: 0,
+    }))
+}
+fn frame_samples(rate: u32, fps: u32, index: u32) -> u32 {
+    (((index as u64 + 1) * rate as u64 / fps as u64) - (index as u64 * rate as u64 / fps as u64))
+        as u32
 }
 #[no_mangle]
 pub unsafe extern "C" fn flex_free(state: *mut Flex) {
@@ -323,13 +360,11 @@ pub unsafe extern "C" fn encode_audio_v5(
     out: *mut u8,
 ) -> i32 {
     if ![4, 8, 16].contains(&fps)
-        || rate < 6000
+        || rate < 250
         || rate > 32000
-        || rate % fps != 0
-        || count != rate / fps
+        || count != frame_samples(rate, fps, index)
         || size < 30 + count.div_ceil(2)
         || size > 223 * 32
-        || size % 223 != 0
     {
         return -1;
     }
@@ -356,7 +391,7 @@ pub unsafe extern "C" fn encode_audio_v5(
 }
 #[no_mangle]
 pub unsafe extern "C" fn decode_audio_v5(packet: *const u8, size: u32, out: *mut i16) -> i32 {
-    if packet.is_null() || out.is_null() || size < 223 || size > 223 * 32 || size % 223 != 0 {
+    if packet.is_null() || out.is_null() || size < 31 || size > 223 * 32 {
         return -1;
     }
     let p = std::slice::from_raw_parts(packet, size as usize);
@@ -366,10 +401,9 @@ pub unsafe extern "C" fn decode_audio_v5(packet: *const u8, size: u32, out: *mut
     if &p[..4] != b"DVA5"
         || crc32(&p[..p.len() - 4]) != u32::from_le_bytes(p[p.len() - 4..].try_into().unwrap())
         || ![4, 8, 16].contains(&fps)
-        || rate < 6000
+        || rate < 250
         || rate > 32000
-        || rate % fps != 0
-        || n != rate / fps
+        || n != frame_samples(rate, fps, u32::from_le_bytes(p[8..12].try_into().unwrap()))
         || 26 + n.div_ceil(2) > size - 4
         || p[24] > 88
         || u32::from_le_bytes(p[8..12].try_into().unwrap())
@@ -396,6 +430,31 @@ pub unsafe extern "C" fn decode_audio_v5(packet: *const u8, size: u32, out: *mut
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn shortened_blocks_correct_errors() {
+        for length in [31, 38, 46, 62, 94, 155, 218, 223] {
+            let p = Profile::shortened(128, 64, 1, length).unwrap();
+            let mut data: Vec<u8> = (0..length).map(|i| ((i * 73 + 19) % 256) as u8).collect();
+            data[..4].copy_from_slice(b"DVA5");
+            data[8..12].copy_from_slice(&42u32.to_le_bytes());
+            let crc = crc32(&data[..length - 4]);
+            data[length - 4..].copy_from_slice(&crc.to_le_bytes());
+            let original = pack(&data, p).unwrap();
+            let positions = p.positions();
+            let mut e = original.clone();
+            for i in 0..16 {
+                e[positions[i]] ^= 0x93;
+            }
+            let mut out = vec![0; length];
+            assert_eq!(repair(&e, p, &mut out), Some(16));
+            assert_eq!(out, data);
+            let mut e = original;
+            for i in 0..17 {
+                e[positions[i]] ^= 0x81;
+            }
+            assert!(repair(&e, p, &mut out).is_none());
+        }
+    }
     #[test]
     fn dynamic_interleaving_and_bounds() {
         assert!(Profile::new(80, 24, 10).is_none());

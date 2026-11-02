@@ -31,14 +31,16 @@ Physical camera focus, permissions, and speaker output still need a hardware tes
 ## Full-track configurable optical audio
 
 Open `/optical` on the Mac and phone. The sender can load the full **I’ll
-Follow the Sun** recording (about 1 minute 49 seconds). Choose audio bitrate,
+Follow the Sun** recording (about 1 minute 49 seconds). Choose audio bitrate (1–128 kbps),
 optical fps, columns and rows, then Auto-fit grid. Load / encode the full track
 and start transmission. Use Copy matching receiver link to configure the phone.
 On the phone, choose Receive + play, start camera/audio, and keep the whole
 white panel and four square markers visible.
 
 The default is 128 kbps mono ADPCM (32 kHz), 8 fps, 168 × 52 = 8,736 colored
-cells/frame. This is a different codec from the original 128 kbps MP3. At 16 fps,
+cells/frame. This is a different codec from the original 128 kbps MP3. The Set 1 kbps preset
+uses 250 Hz mono and, at 8 fps, only 40 × 11 = 440 color cells; expect bass/rhythm
+rather than full-band music. At 16 fps,
 auto-fit uses 4,480 cells/frame. Grid capacity does not guarantee reliable camera
 capture; use lower bitrate if cells are unresolved. Native source preview on
 the sender is separate from optical reception.

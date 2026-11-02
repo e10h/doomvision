@@ -6,3 +6,7 @@ const rms=a=>Math.sqrt(a.slice(100,-100).reduce((s,n)=>s+(n/32768)**2,0)/(a.leng
 const low=monoPcm(tone(1000),8000),aliased=monoPcm(tone(15000),8000),high=monoPcm(tone(10000),32000);
 assert.equal(low.length,8000);assert.ok(rms(low)>.5);assert.ok(rms(aliased)<.03,'downsampling rejects aliasing');assert.equal(high.length,32000);assert.ok(rms(high)>.5,'128 kbps path preserves upper-band audio');
 console.log('Sender resampler: duration, stereo downmix, low-frequency preservation, anti-aliasing, and 32 kHz upper band passed.');
+
+const bass=monoPcm(tone(40),250),lowAlias=monoPcm(tone(1000),250);
+const middleRms=a=>Math.sqrt(a.slice(30,-30).reduce((sum,n)=>sum+(n/32768)**2,0)/(a.length-60));
+assert.equal(bass.length,250);assert.ok(middleRms(bass)>.45,'1 kbps retains bass');assert.ok(middleRms(lowAlias)<.02,'cascaded decimation suppresses aliasing at 250 Hz');console.log('1 kbps resampler: 250 samples/second, bass preservation, and alias suppression passed.');
