@@ -500,6 +500,8 @@ export default function OpticalReceiverPage() {
           {isLocked && audioReady && audioRunning ? ((telemetry?.status ?? 0) & 2 ? "✓ Playing music" : "✓ Audio ready; music flag off") : "Playback waiting"}
         </div>
         <p style={{ marginBottom: 0, color: "#8b98ac" }}>Keep the screen level and fill the camera view. The two pixel rows at the very top must be sharp and visible. Manual mode: drag tightly around both barcode rows.</p>
+        <p style={{ color: "#8b98ac", marginBottom: 8 }}>iPhone: tap Enable / test audio, raise media volume, and check the output in Control Center (iPhone speaker or your headphones). If silent on an older iOS version, turn Silent Mode off. A moving waveform alone does not confirm speaker output.</p>
+        {audioReady && !audioRunning && <p role="status" style={{ color: "#ffaa00" }}>Audio paused or interrupted — tap Enable / test audio.</p>}
         {error && <p role="alert" style={{ color: "#ff7777" }}>{error}</p>}
         <button className="custom-btn" disabled={audioLoading || !decoderReady} onClick={async () => {
           const audio = audioEngineRef.current;
@@ -659,7 +661,7 @@ export default function OpticalReceiverPage() {
                   Soundtrack: <b style={{ color: "#fff" }}>At Doom&apos;s Gate (D_E1M1)</b>
                 </span>
                 <span style={{ color: isLocked && telemetry && (telemetry.status & 2) ? "#00ff88" : "#7f8a9a" }}>
-                  {isLocked && telemetry && (telemetry.status & 2) ? "▶ PLAYING (44.1 kHz)" : "⏸ PAUSED"}
+                  {isLocked && audioRunning && telemetry && (telemetry.status & 2) ? "▶ AUDIO RUNNING" : "⏸ PAUSED"}
                 </span>
               </div>
             </div>

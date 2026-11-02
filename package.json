@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "build:wasm": "cargo build --manifest-path wasm_decoder/Cargo.toml --target wasm32-unknown-unknown --release && cp wasm_decoder/target/wasm32-unknown-unknown/release/optical_decoder.wasm public/optical_decoder.wasm",
-    "test:decoder": "node scripts/test-decoder.mjs"
+    "test:decoder": "node scripts/test-decoder.mjs",
+    "test:audio": "node scripts/test-audio.mjs"
   },
   "dependencies": {
     "next": "16.4.3",

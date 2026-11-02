@@ -32,22 +32,35 @@ export class WebAudioEngine {
   private sfxBuffers: Map<number, AudioBuffer> = new Map();
   private lastMask: number = 0;
 
+  // iOS otherwise treats Web Audio as ambient sound and may mute it even
+  // while the context and analyser continue to run. Older browsers omit this API.
+  private requestPlaybackSession(): void {
+    const session = (navigator as Navigator & { audioSession?: { type: string } }).audioSession;
+    if (session) {
+      try { session.type = 'playback'; }
+      catch (err) { console.warn('Playback audio session unavailable:', err); }
+    }
+  }
+
   async init(): Promise<boolean> {
     try {
-      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      this.ctx = new AudioCtx({ sampleRate: 44100 });
+      this.requestPlaybackSession();
+      if (!this.ctx || this.ctx.state === 'closed') {
+        const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        this.ctx = new AudioCtx({ sampleRate: 44100 });
 
-      this.masterGain = this.ctx.createGain();
-      this.masterGain.gain.value = 0.9;
+        this.masterGain = this.ctx.createGain();
+        this.masterGain.gain.value = 0.9;
 
-      this.analyser = this.ctx.createAnalyser();
-      this.analyser.fftSize = 512;
-      this.analyser.smoothingTimeConstant = 0.8;
+        this.analyser = this.ctx.createAnalyser();
+        this.analyser.fftSize = 512;
+        this.analyser.smoothingTimeConstant = 0.8;
 
-      this.masterGain.connect(this.analyser);
-      this.analyser.connect(this.ctx.destination);
+        this.masterGain.connect(this.analyser);
+        this.analyser.connect(this.ctx.destination);
 
-      await this.ctx.resume();
+      }
+      await this.resumeContext();
       await this.preloadSounds();
       if (!this.musicBuffer || this.sfxBuffers.size !== 9) throw new Error("Audio files failed to load");
       return true;
@@ -58,8 +71,14 @@ export class WebAudioEngine {
   }
 
   async resumeContext(): Promise<void> {
-    if (this.ctx && this.ctx.state === 'suspended') {
+    this.requestPlaybackSession();
+    // Safari also reports 'interrupted' after calls, camera permission prompts,
+    // or app switches. Resume synchronously from the user's enable-audio tap.
+    if (this.ctx && this.ctx.state !== 'running' && this.ctx.state !== 'closed') {
       await this.ctx.resume();
+    }
+    if (this.ctx && this.ctx.state !== 'running') {
+      throw new Error('Audio is paused by iPhone. Return to Safari and tap Enable / test audio.');
     }
   }
 
