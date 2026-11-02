@@ -53,3 +53,14 @@ documents the previous fixed-rate transport.
 
 The byte-perfect MP3 file-transfer experiment remains at `/optical/file`; it
 buffers the complete file before playback. See [COLOR_PROTOCOL.md](COLOR_PROTOCOL.md).
+
+## Palette experiments
+
+The Palette menu offers 6 through 1024 data colors, with automatic grid sizing,
+Gray-coded levels, calibration, and Gaussian soft-bit evidence combining. Six
+colors remain the baseline; high-order modes are experimental. Copy a new
+matching receiver link after changing palette. See [PALETTES.md](PALETTES.md)
+for packing, calibration, capacity, uncertainty, and tests.
+
+Run `npm run test:palettes` for clean/distorted captures, soft-bit recovery,
+mixed-frame rejection, and noise tradeoffs.

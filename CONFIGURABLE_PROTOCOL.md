@@ -157,3 +157,10 @@ Rust tests cover shortened data lengths 31, 38, 46, 62, 94, 155, 218, and 223,
 in a second at 1 kbps for every fps, stable playout timing, bass preservation,
 and suppression of high-frequency aliasing. Source and full-track duration are
 unchanged; only audio fidelity and packet/grid size change.
+
+## Selectable color alphabets
+
+Palette sizes 8 through 1024 use binary bit packing and 11 calibration patches
+per row; the original six-color path remains unchanged. The `colors` query
+parameter is part of the matching receiver settings. Capacity and decoding for
+these modes are described in [PALETTES.md](PALETTES.md).

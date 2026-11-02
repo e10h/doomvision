@@ -393,3 +393,5 @@ mod rs;
 mod robust;
 
 mod flex;
+
+mod palette;

@@ -1,13 +1,13 @@
 //! Configurable six-color transport. Geometry stays fixed; cells and RS lanes vary.
 use crate::{color::crc32, rs};
 #[derive(Clone, Copy)]
-struct Profile {
-    cols: usize,
-    rows: usize,
-    lanes: usize,
-    lane_data: usize,
-    packet: usize,
-    n: usize,
+pub(crate) struct Profile {
+    pub(crate) cols: usize,
+    pub(crate) rows: usize,
+    pub(crate) lanes: usize,
+    pub(crate) lane_data: usize,
+    pub(crate) packet: usize,
+    pub(crate) n: usize,
 }
 impl Profile {
     fn new(cols: usize, rows: usize, lanes: usize) -> Option<Self> {
@@ -34,7 +34,12 @@ impl Profile {
             n,
         })
     }
-    fn copies(self) -> [usize; 3] {
+    pub(crate) fn binary(cols:usize,rows:usize,lanes:usize,lane_data:usize,bits:usize)->Option<Self>{
+        if !(32..=256).contains(&cols)||!(8..=128).contains(&rows)||!(1..=32).contains(&lanes)||!(31..=223).contains(&lane_data)||!(3..=10).contains(&bits){return None;}
+        let n=(lanes*(lane_data+32)+33)/4*4;if(cols-11)*rows*bits/8<n{return None;}
+        Some(Self{cols,rows,lanes,lane_data,packet:lanes*lane_data,n})
+    }
+    pub(crate) fn copies(self) -> [usize; 3] {
         [0, (self.n - 10) / 2, self.n - 10]
     }
     fn positions(self) -> Vec<usize> {
@@ -44,7 +49,7 @@ impl Profile {
             .collect()
     }
 }
-fn identity(e: &[u8], p: Profile) -> Result<(u32, u16), u32> {
+pub(crate) fn identity(e: &[u8], p: Profile) -> Result<(u32, u16), u32> {
     let copies = p.copies();
     let mut valid = Vec::new();
     for start in copies {
@@ -72,7 +77,7 @@ fn identity(e: &[u8], p: Profile) -> Result<(u32, u16), u32> {
         u16::from_le_bytes(h[4..6].try_into().unwrap()),
     ))
 }
-fn pack(data: &[u8], p: Profile) -> Option<Vec<u8>> {
+pub(crate) fn pack(data: &[u8], p: Profile) -> Option<Vec<u8>> {
     if &data[..4] != b"DVA5"
         || crc32(&data[..p.packet - 4])
             != u32::from_le_bytes(data[p.packet - 4..].try_into().unwrap())
@@ -104,7 +109,7 @@ fn pack(data: &[u8], p: Profile) -> Option<Vec<u8>> {
     }
     Some(e)
 }
-fn repair(e: &[u8], p: Profile, out: &mut [u8]) -> Option<usize> {
+pub(crate) fn repair(e: &[u8], p: Profile, out: &mut [u8]) -> Option<usize> {
     let (id, index) = identity(e, p).ok()?;
     let positions = p.positions();
     let mut repaired = 0;

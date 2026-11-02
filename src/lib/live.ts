@@ -27,20 +27,20 @@ export class LiveCodec {
     const r=await fetch('/optical_decoder.wasm',{cache:'no-cache'});
     if(!r.ok) throw new Error(`Decoder HTTP ${r.status}`);
     const {instance:{exports:w}}=await WebAssembly.instantiate(await r.arrayBuffer(),{});
-    if(typeof w.robust_alignment_candidates!=='function'||(p&&typeof w.flex_new_profile!=='function')) throw new Error('Old decoder cached. Reload the website.');
+    if(typeof w.robust_alignment_candidates!=='function'||(p&&(typeof w.flex_new_profile!=='function'||typeof w.palette_new!=='function'))) throw new Error('Old decoder cached. Reload the website.');
     const alloc=w.wasm_alloc as (n:number)=>number;
-    const codec=new LiveCodec(w,alloc(p?.packetBytes??LIVE_BYTES),alloc(p?p.cols*p.rows:LIVE_COLS*LIVE_ROWS),alloc(p?p.packetBytes*4:1500));
+    const codec=new LiveCodec(w,alloc(p?.packetBytes??LIVE_BYTES),alloc(p?p.cols*p.rows*(p.colors===6?1:2):LIVE_COLS*LIVE_ROWS),alloc(p?p.packetBytes*4:1500));
     codec.profile=p??null;codec.rectWidth=p?Math.max(640,p.cols*4):640;codec.rectHeight=p?Math.max(192,p.rows*4):192;
-    codec.combiner=p?(w.flex_new_profile as (...n:number[])=>number)(p.cols,p.rows,p.lanes,p.laneData):(w.robust_new as ()=>number)();
+    codec.combiner=p?(p.colors===6?(w.flex_new_profile as (...n:number[])=>number)(p.cols,p.rows,p.lanes,p.laneData):(w.palette_new as (...n:number[])=>number)(p.cols,p.rows,p.lanes,p.laneData,p.colors)):(w.robust_new as ()=>number)();
     if(!codec.combiner)throw new Error('Invalid grid configuration');codec.metrics=alloc(20);return codec;
   }
   encode(packet:Uint8Array) {
     if(packet.length!==(this.profile?.packetBytes??LIVE_BYTES))throw new Error('Invalid live packet length');
     const m=this.w.memory as WebAssembly.Memory;
     new Uint8Array(m.buffer).set(packet,this.packet);
-    const ok=this.profile?(this.w.flex_encode as (...p:number[])=>number)(this.combiner,this.packet,this.symbols):(this.w.encode_robust_frame as (...p:number[])=>number)(this.packet,this.symbols);
+    const ok=this.profile?(this.w[this.profile.colors===6?'flex_encode':'palette_encode'] as (...p:number[])=>number)(this.combiner,this.packet,this.symbols):(this.w.encode_robust_frame as (...p:number[])=>number)(this.packet,this.symbols);
     if(ok!==1)throw new Error('Audio packet encoding failed');
-    return new Uint8Array(m.buffer,this.symbols,this.profile?this.profile.cols*this.profile.rows:LIVE_COLS*LIVE_ROWS).slice();
+    return this.profile&&this.profile.colors!==6?new Uint16Array(m.buffer,this.symbols,this.profile.cols*this.profile.rows).slice():new Uint8Array(m.buffer,this.symbols,this.profile?this.profile.cols*this.profile.rows:LIVE_COLS*LIVE_ROWS).slice();
   }
   audio(packet:Uint8Array) {
     if(packet.length!==(this.profile?.packetBytes??LIVE_BYTES))throw new Error('Invalid live packet length');
@@ -72,16 +72,16 @@ export class LiveCodec {
     this.corners=[];
     return this.receive(this.image,data.width,data.height,roi);
   }
-  resetFusion() {if(this.combiner)(this.w[this.profile?'flex_free':'robust_free'] as (p:number)=>void)(this.combiner);this.combiner=this.profile?(this.w.flex_new_profile as (...n:number[])=>number)(this.profile.cols,this.profile.rows,this.profile.lanes,this.profile.laneData):(this.w.robust_new as ()=>number)();}
-  dispose() {if(this.combiner)(this.w[this.profile?'flex_free':'robust_free'] as (p:number)=>void)(this.combiner);this.combiner=0;}
+  resetFusion() {if(this.combiner)(this.w[this.profile?(this.profile.colors===6?'flex_free':'palette_free'):'robust_free'] as (p:number)=>void)(this.combiner);this.combiner=this.profile?(this.profile.colors===6?(this.w.flex_new_profile as (...n:number[])=>number)(this.profile.cols,this.profile.rows,this.profile.lanes,this.profile.laneData):(this.w.palette_new as (...n:number[])=>number)(this.profile.cols,this.profile.rows,this.profile.lanes,this.profile.laneData,this.profile.colors)):(this.w.robust_new as ()=>number)();}
+  dispose() {if(this.combiner)(this.w[this.profile?(this.profile.colors===6?'flex_free':'palette_free'):'robust_free'] as (p:number)=>void)(this.combiner);this.combiner=0;}
   private receive(image:number,width:number,height:number,roi:Roi) {
-    let ok=(this.w[this.profile?'flex_receive':'receive_robust_roi'] as (...p:number[])=>number)(this.combiner,image,width,height,Math.round(roi.x),Math.round(roi.y),Math.round(roi.w),Math.round(roi.h),this.packet,this.metrics);
+    let ok=(this.w[this.profile?(this.profile.colors===6?'flex_receive':'palette_receive'):'receive_robust_roi'] as (...p:number[])=>number)(this.combiner,image,width,height,Math.round(roi.x),Math.round(roi.y),Math.round(roi.w),Math.round(roi.h),this.packet,this.metrics);
     const m=this.w.memory as WebAssembly.Memory;
     let metrics=new Uint32Array(m.buffer,this.metrics,5);
     if(this.profile&&ok!==1&&(metrics[0]===2||metrics[0]===3)){
       const saved=Array.from(metrics);
       for(const [dx,dy]of[[-1,0],[0,-1],[-1,-1],[1,0],[0,1],[1,1],[-1,1],[1,-1]]){
-        const trial=(this.w.flex_trial as (...n:number[])=>number)(this.combiner,image,width,height,Math.round(roi.x),Math.round(roi.y),Math.round(roi.w),Math.round(roi.h),this.packet,this.metrics,dx,dy);
+        const trial=(this.w[this.profile.colors===6?'flex_trial':'palette_trial'] as (...n:number[])=>number)(this.combiner,image,width,height,Math.round(roi.x),Math.round(roi.y),Math.round(roi.w),Math.round(roi.h),this.packet,this.metrics,dx,dy);
         if(trial===1){ok=1;break;}
       }
       metrics=new Uint32Array(m.buffer,this.metrics,5);if(ok!==1)metrics.set(saved);
