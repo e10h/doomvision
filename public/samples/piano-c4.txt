@@ -1,0 +1,7 @@
+Meta Piano — INSPiano_Vel03_C4_01.ogg
+Recorded piano sample from Meta Open Sound / Meta Creative Audio.
+License: CC0 1.0 Universal (public domain).
+Source: https://github.com/facebookincubator/Meta-open-sound/tree/main/systems/instruments/meta-piano
+Audio: https://raw.githubusercontent.com/facebookincubator/Meta-open-sound/main/systems/instruments/meta-piano/ogg/INSPiano_Vel03_C4_01.ogg
+Doomvision uses the first 8 seconds, 8 kHz mono PCM8 storage with +6 dB gain,
+resampled/mixed on the TI-84 and transmitted as 32 kbps IMA ADPCM audio.

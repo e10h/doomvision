@@ -2,9 +2,30 @@
 
 Full supplied “I'll Follow the Sun” recording, 108.85 seconds. Actual audio bytes travel through the optical grid: mono 8 kHz IMA ADPCM, 4 bits/sample = 32 kbps, plus packet headers and Reed–Solomon protection. It loops automatically.
 
-## Single-file 8-second clip
+## Single-file Rick clip + actual piano audio
 
-Download `public/downloads/DVSUN8.8xp` and run `DVSUN8`. This embeds the first 8 seconds at 32 kbps, 8 fps, **96 columns × 29 rows, 6 colors** and needs no song AppVars. The standard CE C libraries and a compatible native launcher are still required. Press 2nd to play/pause; Enter restarts; Clear exits. It loops every 8 seconds. The panel fills the LCD; a small top-edge counter measures actual displayed frames per second over roughly one second (0.0 while paused). Alignment markers remain square and the grid is taller. Only the grid and FPS readout are redrawn during playback. Six-color unpacking uses a RAM lookup table and direct cell stores, avoiding per-cell division/modulo and tiny memset calls. All 64 optimized frames match the previous renderer pixel for pixel. Every payload passes RS/CRC with an exact grid crop; the generic browser reader misses 19 of the 64 synthetic frames. Use the dedicated **`/ti84`** reader, which knows the actual LCD geometry, samples the rounded cell centers, and maintains a verified lock. All 64 native frames pass there automatically; scaled, rotated, and perspective test images also pass. Manual receiver crop remains available. Actual device FPS must be measured on hardware. The automatic reader also recovers the exact CRC-valid song packet from the supplied real iPhone photo IMG_5407, including its sideways orientation and LCD glow. Rebuild with `node tools/build-clip.mjs`; verify with `CE_COLORS=6 CE_OUTPUT=clip-build node tools/verify.mjs` after compiling a copy of `tools/render-test.c` under `clip-build/tools/` so it uses the generated clip header. The single-file clip defaults to six colors; the full-song package below remains sixteen colors.
+Download `public/downloads/DVSUN8.8xp` and run `DVSUN8`. One calculator file contains the first **8 seconds of Never Gonna Give You Up** and an **8-second recorded piano sample**. Use the dedicated **`/ti84`** iPhone reader: 32 kbps, 8 fps, 96 × 29, six colors. The standard CE C libraries and a compatible native launcher remain required.
+
+- **2nd**: play/pause Rick; **Enter**: restart Rick; **Clear**: exit from clip mode.
+- **MODE**: toggle sampled piano / Rick. A tiny `P` marks piano mode.
+- In piano mode all **48 scanable note keys** trigger pitched recordings, spanning C3–B6; up to eight sampled voices ring together. MODE is reserved; the hardware ON key is outside the scanned matrix. CLEAR and 2nd are note keys in piano mode. Press MODE, then Clear to exit.
+
+The calculator resamples and mixes the recording, creates 1,000 PCM samples per audio frame, and encodes actual IMA ADPCM audio locally. Both modes use the ordinary DVA5 audio packets, Reed–Solomon protection and CRC. **No key-state commands or browser synthesizer are used.** The reader plays the decoded audio with a 125 ms minimum buffer. The panel and measured FPS counter remain unchanged. Hardware FPS and interactive latency still require a physical-device test.
+
+Piano source: [Meta Piano C4, velocity 3](https://github.com/facebookincubator/Meta-open-sound/tree/main/systems/instruments/meta-piano), CC0 public domain. `piano-c4.ogg` is the source recording; the build trims/pads to eight seconds, converts it to 8 kHz signed PCM8 for storage, and outputs 32 kbps IMA audio. Notes resample this real recording; higher pitches have a shorter decay. The 8-bit storage is a sound-quality tradeoff that allows both recordings in one compressed program.
+
+Rebuild from this directory with `node tools/build-clip.mjs` (CEdev, ffmpeg and installed receiver dependencies required). Set `CE_SOURCE` to the original Rick MP3 to use it instead of the bundled 30-second excerpt. The tool refuses a split-file build.
+
+For native renderer/encoder verification:
+
+```
+mkdir -p clip-build/tools
+cp tools/audio-test.c clip-build/tools/
+cc -O2 clip-build/tools/audio-test.c clip-build/src/embedded.c -o /private/tmp/ce-audio-test
+node tools/verify-audio.mjs
+```
+
+The C encoder matches the Rust encoder byte for byte. All 64 Rick blocks, 48 distinct piano pitches and three later decay blocks pass actual raster → automatic alignment → RS/CRC → exact audio tests (115 round trips). These are host tests of the actual C encoder and renderer, not hardware timing measurements. The automatic reader also recovers the original exact audio packet from the privately held real iPhone photo; that photo is not published.
 
 ## Full-song transfer and play
 

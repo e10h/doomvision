@@ -11,7 +11,7 @@ export default function Ti84Reader(){
  const [taps,setTaps]=useState(0);
  const [ready,setReady]=useState(false),[running,setRunning]=useState(false),[opening,setOpening]=useState(false),[error,setError]=useState(''),[cropMode,setCropMode]=useState(false);
  const [status,setStatus]=useState('Ready to scan'),[stats,setStats]=useState({valid:0,rejected:0,played:0,audio:'off',playing:false,index:-1});
- useEffect(()=>{const cancelPending=()=>{generation.current++;};let active=true;const p=new LivePlayer();player.current=p;let c:LiveCodec|null=null;
+ useEffect(()=>{const cancelPending=()=>{generation.current++;};let active=true;const p=new LivePlayer(.125);player.current=p;let c:LiveCodec|null=null;
  void LiveCodec.create(profile(SETTINGS)).then(value=>{c=value;if(active){codec.current=value;setReady(true);}else value.dispose();}).catch(e=>{if(active)setError(String(e));});
  return()=>{active=false;cancelPending();stream.current?.getTracks().forEach(t=>t.stop());p.dispose();if(codec.current===c)codec.current=null;c?.dispose();};},[]);
  const stop=()=>{generation.current++;stream.current?.getTracks().forEach(t=>t.stop());stream.current=null;player.current?.reset();codec.current?.resetFusion();if(codec.current)codec.current.corners=[];setRunning(false);setOpening(false);};
@@ -45,7 +45,7 @@ export default function Ti84Reader(){
  return <main style={{maxWidth:900,margin:'auto',padding:16}}>
  <Link href="/optical" style={{color:'#00d8ff'}}>← Optical audio</Link><h1 style={{fontSize:26,margin:'16px 0'}}>TI-84 Plus CE reader</h1>
  <p>32 kbps · 6 colors · 96 × 29 · 8 fps</p>
- <p>Run DVSUN8. Keep all four corner squares visible, then press 2nd on the calculator.</p>
+ <p>DVSUN8: 2nd plays the 8-second Rick Astley clip. MODE switches to sampled piano; calculator keys play notes. The barcode carries actual audio in both modes.</p>
  <div style={{display:'flex',flexWrap:'wrap',gap:10,margin:'16px 0'}}>
  <button className="custom-btn active" disabled={!ready||opening} onClick={running?stop:start}>{opening?'Opening camera…':running?'Stop':'Start camera + sound'}</button>
  <button className="custom-btn" disabled={!ready} onClick={async()=>{try{await player.current?.enable();player.current?.testTone();}catch(e){setError(String(e));}}}>Test sound</button>

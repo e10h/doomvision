@@ -182,6 +182,7 @@ export class LivePlayer {
   public concealed=0;
   public rebuffers=0;
   public latencySeconds=.5;
+  constructor(private readonly minimumLatency=.5){this.latencySeconds=minimumLatency;}
   async enable() {
     const session=(navigator as Navigator & {audioSession?:{type:string}}).audioSession;
     if(session)try{session.type='playback';}catch{}
@@ -210,7 +211,7 @@ export class LivePlayer {
     this.seen.add(index);
     if(this.seen.size>2048)for(const n of this.seen)if(n<this.highest-512)this.seen.delete(n);
     if(index<this.next){this.late++;return false;}
-    if(this.arrivalIndex>=0&&index>this.arrivalIndex){const error=Math.abs(this.ctx.currentTime-this.arrivalTime-(index-this.arrivalIndex)*this.blockSeconds);this.jitter=this.jitter*.9+error*.1;this.latencySeconds=Math.min(1.5,Math.max(.5,.5+4*this.jitter));}
+    if(this.arrivalIndex>=0&&index>this.arrivalIndex){const error=Math.abs(this.ctx.currentTime-this.arrivalTime-(index-this.arrivalIndex)*this.blockSeconds);this.jitter=this.jitter*.9+error*.1;this.latencySeconds=Math.min(1.5,Math.max(this.minimumLatency,this.minimumLatency+4*this.jitter));}
     if(index>this.arrivalIndex){this.arrivalIndex=index;this.arrivalTime=this.ctx.currentTime;}
     this.pending.set(index,b);this.highest=Math.max(this.highest,index);
     if(this.waiting){for(const n of this.pending.keys())if(n<index)this.pending.delete(n);this.next=index;this.base=Math.max(this.ctx.currentTime,this.end)+this.latencySeconds-index*this.blockSeconds;this.waiting=false;this.missing=0;}
@@ -248,7 +249,7 @@ export class LivePlayer {
     if(available.length){this.next=available[0];this.base=Math.max(this.ctx.currentTime,this.end)+this.latencySeconds-this.next*this.blockSeconds;this.waiting=false;this.missing=0;}
   }
   reset(){
-    for(const s of this.sources){try{s.stop();}catch{}s.disconnect();}this.sources.clear();this.pending.clear();this.seen.clear();this.stream=null;this.epoch=0;this.highest=-1;this.end=0;this.waiting=false;this.missing=0;this.lastGood=null;this.lastTail=0;this.arrivalIndex=-1;this.jitter=0;this.latencySeconds=.5;this.played=0;this.late=0;this.concealed=0;this.rebuffers=0;
+    for(const s of this.sources){try{s.stop();}catch{}s.disconnect();}this.sources.clear();this.pending.clear();this.seen.clear();this.stream=null;this.epoch=0;this.highest=-1;this.end=0;this.waiting=false;this.missing=0;this.lastGood=null;this.lastTail=0;this.arrivalIndex=-1;this.jitter=0;this.latencySeconds=this.minimumLatency;this.played=0;this.late=0;this.concealed=0;this.rebuffers=0;
   }
   dispose(){if(this.timer!==null)clearInterval(this.timer);this.timer=null;this.reset();void this.ctx?.close();}
 }
