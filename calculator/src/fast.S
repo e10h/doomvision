@@ -1,0 +1,1212 @@
+/* eZ80 ADL kernels. IX/IY preserved; other registers are scratch.
+ * Executed from program RAM. Fixed-size loops match the 96x29 six-color grid. */
+.assume ADL=1
+.section .text._dv_unpack,"ax",@progbits
+.global _dv_unpack
+_dv_unpack:
+ push ix
+ push iy
+ ld ix,0
+ add ix,sp
+ ld hl,(ix+9)
+ ld de,(ix+12)
+ ld iy,(ix+15)
+ ld bc,(ix+18)
+ ld (.Ltable+1),bc
+.Lunpack:
+ ld a,(hl)
+ inc hl
+ push hl
+ ld bc,0
+ ld c,a
+ ld b,3
+ mlt bc
+.Ltable:
+ ld hl,0
+ add hl,bc
+ ld bc,3
+ ldir
+ pop hl
+ dec iy
+ lea bc,iy+0
+ ld a,b
+ or c
+ jr nz,.Lunpack
+ pop iy
+ pop ix
+ ret
+.section .text._dv_stretch,"ax",@progbits
+.global _dv_stretch
+_dv_stretch:
+ push ix
+ ld ix,0
+ add ix,sp
+ ld de,(ix+6)
+ ld hl,(ix+9)
+ ld ix,(ix+12)
+ ld b,96
+.Lstretch:
+ ld a,(hl)
+ inc hl
+ ld c,(ix+0)
+ inc ix
+ ld (de),a
+ inc de
+ ld (de),a
+ inc de
+ dec c
+ dec c
+ jr z,.Ltwo
+ ld (de),a
+ inc de
+.Ltwo:
+ djnz .Lstretch
+ pop ix
+ ret
+.section .text._dv_mix1000,"ax",@progbits
+.global _dv_mix1000
+_dv_mix1000:
+ push ix
+ ld ix,0
+ add ix,sp
+ ld hl,(ix+9)
+ ld b,(ix+12)
+ ld c,(ix+15)
+ ld de,0
+ ld e,(ix+13)
+ ld ix,(ix+6)
+ ld a,125
+ ld (.Lmixcount+1),a
+.Lmix:
+ .rept 8
+ ld a,(hl)
+ add a,a
+ sbc a,a
+ ld d,a
+ ld a,(hl)
+ add a,(ix+0)
+ ld (ix+0),a
+ ld a,d
+ adc a,(ix+1)
+ ld (ix+1),a
+ ld d,0
+ inc ix
+ inc ix
+ ld a,c
+ add a,b
+ ld c,a
+ jr nc,1f
+ inc hl
+1:
+ add hl,de
+ .endr
+.Lmixcount:
+ ld a,125
+ dec a
+ ld (.Lmixcount+1),a
+ jp nz,.Lmix
+ pop ix
+ ret
+.section .text._dv_rs_lane,"ax",@progbits
+.global _dv_rs_lane
+_dv_rs_lane:
+ push ix
+ ld ix,0
+ add ix,sp
+ ld hl,(ix+9)
+ ld (.Llane_table+1),hl
+ ld ix,(ix+6)
+ ld b,223
+.Llane:
+ ld a,(ix+0)
+ inc ix
+ or a,a
+ jp z,.Llane_next
+ ld hl,0
+ ld l,a
+ add hl,hl
+ add hl,hl
+ add hl,hl
+ add hl,hl
+ add hl,hl
+.Llane_table:
+ ld de,0
+ add hl,de
+ lea de,ix+0
+ .rept 32
+ ld a,(de)
+ xor (hl)
+ ld (de),a
+ inc de
+ inc hl
+ .endr
+.Llane_next:
+ dec b
+ jp nz,.Llane
+ pop ix
+ ret
+.section .text._dv_symbols,"ax",@progbits
+.global _dv_symbols
+_dv_symbols:
+ push ix
+ push iy
+ ld ix,0
+ add ix,sp
+ ld iy,(ix+9)
+ ld de,(ix+12)
+ push de
+ ld hl,(ix+15)
+ ld (.Lbase0+1),hl
+ ld de,3328
+ add hl,de
+ ld (.Lbase1+1),hl
+ add hl,de
+ ld (.Lbase2+1),hl
+ add hl,de
+ ld (.Lbase3+1),hl
+ pop ix
+ exx
+ ld b,0
+ exx
+ ld a,199
+ ld (.Lgroups+1),a
+.Lgroup:
+ ld bc,0
+ ld c,(iy+0)
+ ld b,13
+ mlt bc
+.Lbase0:
+ ld hl,0
+ add hl,bc
+ ld (.Lpart0+1),hl
+ ld bc,0
+ ld c,(iy+1)
+ ld b,13
+ mlt bc
+.Lbase1:
+ ld hl,0
+ add hl,bc
+ ld (.Lpart1+1),hl
+ ld bc,0
+ ld c,(iy+2)
+ ld b,13
+ mlt bc
+.Lbase2:
+ ld hl,0
+ add hl,bc
+ ld (.Lpart2+1),hl
+ ld bc,0
+ ld c,(iy+3)
+ ld b,13
+ mlt bc
+.Lbase3:
+ ld hl,0
+ add hl,bc
+ ld (.Lpart3+1),hl
+ lea iy,iy+4
+.Lpart0:
+ ld hl,0
+.Lpart1:
+ ld de,0
+ exx
+.Lpart2:
+ ld hl,0
+.Lpart3:
+ ld de,0
+ exx
+ ld b,13
+ ld c,0
+.Ldigit:
+ ld a,(de)
+ inc de
+ add a,(hl)
+ inc hl
+ exx
+ ld c,a
+ ld a,(de)
+ inc de
+ add a,c
+ add a,(hl)
+ inc hl
+ exx
+ add a,c
+ ld c,0
+.Lmod6:
+ cp 6
+ jr c,.Lcolor
+ sub 6
+ inc c
+ jr .Lmod6
+.Lcolor:
+ exx
+ ld c,a
+ ld a,b
+ or a,a
+ jr z,.Lpack0
+ dec a
+ jr z,.Lpack1
+ ld a,c
+ add a,a
+ add a,a
+ ld c,a
+ add a,a
+ add a,a
+ add a,a
+ add a,c
+ add a,(ix+0)
+ ld (ix+0),a
+ inc ix
+ ld b,0
+ jr .Lpacked
+.Lpack1:
+ ld a,c
+ add a,a
+ add a,c
+ add a,a
+ add a,(ix+0)
+ ld (ix+0),a
+ ld b,2
+ jr .Lpacked
+.Lpack0:
+ ld a,c
+ ld (ix+0),a
+ ld b,1
+.Lpacked:
+ exx
+ dec b
+ jp nz,.Ldigit
+.Lgroups:
+ ld a,199
+ dec a
+ ld (.Lgroups+1),a
+ jp nz,.Lgroup
+ pop iy
+ pop ix
+ ret
+.section .text._dv_adpcm,"ax",@progbits
+.global _dv_adpcm
+_dv_adpcm:
+ push ix
+ push iy
+ ld ix,0
+ add ix,sp
+ ld iy,(ix+9)
+ ld de,(ix+12)
+ push de
+ pop ix
+ ld hl,0
+ ld l,(iy+0)
+ ld h,(iy+1)
+ bit 7,h
+ jr z,.Lfirst_pos
+ ld de,0xff0000
+ add hl,de
+.Lfirst_pos:
+ ld (.Loldpred+1),hl
+ ld a,32
+ ld (.Lindex+1),a
+ xor a,a
+ ld (.Lphase+1),a
+ ld hl,1000
+ ld (.Lsamples+1),hl
+.Lsample:
+ ld hl,0
+ ld l,(iy+0)
+ ld h,(iy+1)
+ inc iy
+ inc iy
+ bit 7,h
+ jr z,.Lsample_pos
+ ld de,0xff0000
+ add hl,de
+.Lsample_pos:
+.Loldpred:
+ ld de,0
+ or a,a
+ sbc hl,de
+ ld b,0
+ jp p,.Ldiff_pos
+ ld b,8
+ ex de,hl
+ ld hl,0
+ or a,a
+ sbc hl,de
+.Ldiff_pos:
+ push hl
+.Lindex:
+ ld a,32
+ ld hl,0
+ ld l,a
+ add hl,hl
+ ld de,.Lima_steps
+ add hl,de
+ ld de,0
+ ld e,(hl)
+ inc hl
+ ld d,(hl)
+ pop hl
+ or a,a
+ sbc hl,de
+ jr c,.Lno4
+ set 2,b
+ jr .Lbit2
+.Lno4:
+ add hl,de
+.Lbit2:
+ srl d
+ rr e
+ or a,a
+ sbc hl,de
+ jr c,.Lno2
+ set 1,b
+ jr .Lbit1
+.Lno2:
+ add hl,de
+.Lbit1:
+ srl d
+ rr e
+ or a,a
+ sbc hl,de
+ jr c,.Lno1
+ set 0,b
+.Lno1:
+ ld a,b
+ and 7
+ ld de,0
+ ld e,a
+ ld hl,0
+ ld a,(.Lindex+1)
+ ld l,a
+ add hl,hl
+ add hl,hl
+ add hl,hl
+ add hl,de
+ push hl
+ pop de
+ add hl,hl
+ add hl,de
+ ld de,.Lima_records
+ add hl,de
+ ld de,0
+ ld e,(hl)
+ inc hl
+ ld d,(hl)
+ inc hl
+ ld a,(hl)
+ ld (.Lindex+1),a
+ ld hl,(.Loldpred+1)
+ bit 3,b
+ jr nz,.Lpred_neg
+ add hl,de
+ jr .Lclamp
+.Lpred_neg:
+ or a,a
+ sbc hl,de
+.Lclamp:
+ push hl
+ ld de,32767
+ or a,a
+ sbc hl,de
+ jp p,.Lclamp_hi
+ pop hl
+ push hl
+ ld de,-32768
+ or a,a
+ sbc hl,de
+ jp m,.Lclamp_lo
+ pop hl
+ jr .Lstorepred
+.Lclamp_hi:
+ pop hl
+ ld hl,32767
+ jr .Lstorepred
+.Lclamp_lo:
+ pop hl
+ ld hl,-32768
+.Lstorepred:
+ ld (.Loldpred+1),hl
+.Lphase:
+ ld a,0
+ xor 1
+ ld (.Lphase+1),a
+ jr z,.Lhigh
+ ld a,b
+ ld (ix+0),a
+ jr .Lnext_sample
+.Lhigh:
+ ld a,b
+ rlca
+ rlca
+ rlca
+ rlca
+ or (ix+0)
+ ld (ix+0),a
+ inc ix
+.Lnext_sample:
+.Lsamples:
+ ld hl,1000
+ dec hl
+ ld (.Lsamples+1),hl
+ ld a,h
+ or l
+ jp nz,.Lsample
+ pop iy
+ pop ix
+ ret
+
+.section .rodata.dv_ima,"a",@progbits
+.Lima_steps:
+.short 7,8,9,10,11,12,13,14,16,17,19,21,23,25,28,31,34,37,41,45,50,55,60,66,73,80,88,97,107,118,130,143,157,173,190,209,230,253,279,307,337,371,408,449,494,544,598,658,724,796,876,963,1060,1166,1282,1411,1552,1707,1878,2066,2272,2499,2749,3024,3327,3660,4026,4428,4871,5358,5894,6484,7132,7845,8630,9493,10442,11487,12635,13899,15289,16818,18500,20350,22385,24623,27086,29794,32767
+.Lima_records:
+.byte 0,0,0
+.byte 1,0,0
+.byte 3,0,0
+.byte 4,0,0
+.byte 7,0,2
+.byte 8,0,4
+.byte 10,0,6
+.byte 11,0,8
+.byte 1,0,0
+.byte 3,0,0
+.byte 5,0,0
+.byte 7,0,0
+.byte 9,0,3
+.byte 11,0,5
+.byte 13,0,7
+.byte 15,0,9
+.byte 1,0,1
+.byte 3,0,1
+.byte 5,0,1
+.byte 7,0,1
+.byte 10,0,4
+.byte 12,0,6
+.byte 14,0,8
+.byte 16,0,10
+.byte 1,0,2
+.byte 3,0,2
+.byte 6,0,2
+.byte 8,0,2
+.byte 11,0,5
+.byte 13,0,7
+.byte 16,0,9
+.byte 18,0,11
+.byte 1,0,3
+.byte 3,0,3
+.byte 6,0,3
+.byte 8,0,3
+.byte 12,0,6
+.byte 14,0,8
+.byte 17,0,10
+.byte 19,0,12
+.byte 1,0,4
+.byte 4,0,4
+.byte 7,0,4
+.byte 10,0,4
+.byte 13,0,7
+.byte 16,0,9
+.byte 19,0,11
+.byte 22,0,13
+.byte 1,0,5
+.byte 4,0,5
+.byte 7,0,5
+.byte 10,0,5
+.byte 14,0,8
+.byte 17,0,10
+.byte 20,0,12
+.byte 23,0,14
+.byte 1,0,6
+.byte 4,0,6
+.byte 8,0,6
+.byte 11,0,6
+.byte 15,0,9
+.byte 18,0,11
+.byte 22,0,13
+.byte 25,0,15
+.byte 2,0,7
+.byte 6,0,7
+.byte 10,0,7
+.byte 14,0,7
+.byte 18,0,10
+.byte 22,0,12
+.byte 26,0,14
+.byte 30,0,16
+.byte 2,0,8
+.byte 6,0,8
+.byte 10,0,8
+.byte 14,0,8
+.byte 19,0,11
+.byte 23,0,13
+.byte 27,0,15
+.byte 31,0,17
+.byte 2,0,9
+.byte 6,0,9
+.byte 11,0,9
+.byte 15,0,9
+.byte 21,0,12
+.byte 25,0,14
+.byte 30,0,16
+.byte 34,0,18
+.byte 2,0,10
+.byte 7,0,10
+.byte 12,0,10
+.byte 17,0,10
+.byte 23,0,13
+.byte 28,0,15
+.byte 33,0,17
+.byte 38,0,19
+.byte 2,0,11
+.byte 7,0,11
+.byte 13,0,11
+.byte 18,0,11
+.byte 25,0,14
+.byte 30,0,16
+.byte 36,0,18
+.byte 41,0,20
+.byte 3,0,12
+.byte 9,0,12
+.byte 15,0,12
+.byte 21,0,12
+.byte 28,0,15
+.byte 34,0,17
+.byte 40,0,19
+.byte 46,0,21
+.byte 3,0,13
+.byte 10,0,13
+.byte 17,0,13
+.byte 24,0,13
+.byte 31,0,16
+.byte 38,0,18
+.byte 45,0,20
+.byte 52,0,22
+.byte 3,0,14
+.byte 10,0,14
+.byte 18,0,14
+.byte 25,0,14
+.byte 34,0,17
+.byte 41,0,19
+.byte 49,0,21
+.byte 56,0,23
+.byte 4,0,15
+.byte 12,0,15
+.byte 21,0,15
+.byte 29,0,15
+.byte 38,0,18
+.byte 46,0,20
+.byte 55,0,22
+.byte 63,0,24
+.byte 4,0,16
+.byte 13,0,16
+.byte 22,0,16
+.byte 31,0,16
+.byte 41,0,19
+.byte 50,0,21
+.byte 59,0,23
+.byte 68,0,25
+.byte 5,0,17
+.byte 15,0,17
+.byte 25,0,17
+.byte 35,0,17
+.byte 46,0,20
+.byte 56,0,22
+.byte 66,0,24
+.byte 76,0,26
+.byte 5,0,18
+.byte 16,0,18
+.byte 27,0,18
+.byte 38,0,18
+.byte 50,0,21
+.byte 61,0,23
+.byte 72,0,25
+.byte 83,0,27
+.byte 6,0,19
+.byte 18,0,19
+.byte 31,0,19
+.byte 43,0,19
+.byte 56,0,22
+.byte 68,0,24
+.byte 81,0,26
+.byte 93,0,28
+.byte 6,0,20
+.byte 19,0,20
+.byte 33,0,20
+.byte 46,0,20
+.byte 61,0,23
+.byte 74,0,25
+.byte 88,0,27
+.byte 101,0,29
+.byte 7,0,21
+.byte 22,0,21
+.byte 37,0,21
+.byte 52,0,21
+.byte 67,0,24
+.byte 82,0,26
+.byte 97,0,28
+.byte 112,0,30
+.byte 8,0,22
+.byte 24,0,22
+.byte 41,0,22
+.byte 57,0,22
+.byte 74,0,25
+.byte 90,0,27
+.byte 107,0,29
+.byte 123,0,31
+.byte 9,0,23
+.byte 27,0,23
+.byte 45,0,23
+.byte 63,0,23
+.byte 82,0,26
+.byte 100,0,28
+.byte 118,0,30
+.byte 136,0,32
+.byte 10,0,24
+.byte 30,0,24
+.byte 50,0,24
+.byte 70,0,24
+.byte 90,0,27
+.byte 110,0,29
+.byte 130,0,31
+.byte 150,0,33
+.byte 11,0,25
+.byte 33,0,25
+.byte 55,0,25
+.byte 77,0,25
+.byte 99,0,28
+.byte 121,0,30
+.byte 143,0,32
+.byte 165,0,34
+.byte 12,0,26
+.byte 36,0,26
+.byte 60,0,26
+.byte 84,0,26
+.byte 109,0,29
+.byte 133,0,31
+.byte 157,0,33
+.byte 181,0,35
+.byte 13,0,27
+.byte 39,0,27
+.byte 66,0,27
+.byte 92,0,27
+.byte 120,0,30
+.byte 146,0,32
+.byte 173,0,34
+.byte 199,0,36
+.byte 14,0,28
+.byte 43,0,28
+.byte 73,0,28
+.byte 102,0,28
+.byte 132,0,31
+.byte 161,0,33
+.byte 191,0,35
+.byte 220,0,37
+.byte 16,0,29
+.byte 48,0,29
+.byte 81,0,29
+.byte 113,0,29
+.byte 146,0,32
+.byte 178,0,34
+.byte 211,0,36
+.byte 243,0,38
+.byte 17,0,30
+.byte 52,0,30
+.byte 88,0,30
+.byte 123,0,30
+.byte 160,0,33
+.byte 195,0,35
+.byte 231,0,37
+.byte 10,1,39
+.byte 19,0,31
+.byte 58,0,31
+.byte 97,0,31
+.byte 136,0,31
+.byte 176,0,34
+.byte 215,0,36
+.byte 254,0,38
+.byte 37,1,40
+.byte 21,0,32
+.byte 64,0,32
+.byte 107,0,32
+.byte 150,0,32
+.byte 194,0,35
+.byte 237,0,37
+.byte 24,1,39
+.byte 67,1,41
+.byte 23,0,33
+.byte 70,0,33
+.byte 118,0,33
+.byte 165,0,33
+.byte 213,0,36
+.byte 4,1,38
+.byte 52,1,40
+.byte 99,1,42
+.byte 26,0,34
+.byte 78,0,34
+.byte 130,0,34
+.byte 182,0,34
+.byte 235,0,37
+.byte 31,1,39
+.byte 83,1,41
+.byte 135,1,43
+.byte 28,0,35
+.byte 85,0,35
+.byte 143,0,35
+.byte 200,0,35
+.byte 2,1,38
+.byte 59,1,40
+.byte 117,1,42
+.byte 174,1,44
+.byte 31,0,36
+.byte 94,0,36
+.byte 157,0,36
+.byte 220,0,36
+.byte 28,1,39
+.byte 91,1,41
+.byte 154,1,43
+.byte 217,1,45
+.byte 34,0,37
+.byte 103,0,37
+.byte 173,0,37
+.byte 242,0,37
+.byte 57,1,40
+.byte 126,1,42
+.byte 196,1,44
+.byte 9,2,46
+.byte 38,0,38
+.byte 114,0,38
+.byte 191,0,38
+.byte 11,1,38
+.byte 89,1,41
+.byte 165,1,43
+.byte 242,1,45
+.byte 62,2,47
+.byte 42,0,39
+.byte 126,0,39
+.byte 210,0,39
+.byte 38,1,39
+.byte 123,1,42
+.byte 207,1,44
+.byte 35,2,46
+.byte 119,2,48
+.byte 46,0,40
+.byte 138,0,40
+.byte 231,0,40
+.byte 67,1,40
+.byte 161,1,43
+.byte 253,1,45
+.byte 90,2,47
+.byte 182,2,49
+.byte 51,0,41
+.byte 153,0,41
+.byte 255,0,41
+.byte 101,1,41
+.byte 203,1,44
+.byte 49,2,46
+.byte 151,2,48
+.byte 253,2,50
+.byte 56,0,42
+.byte 168,0,42
+.byte 24,1,42
+.byte 136,1,42
+.byte 249,1,45
+.byte 105,2,47
+.byte 217,2,49
+.byte 73,3,51
+.byte 61,0,43
+.byte 184,0,43
+.byte 52,1,43
+.byte 175,1,43
+.byte 43,2,46
+.byte 166,2,48
+.byte 34,3,50
+.byte 157,3,52
+.byte 68,0,44
+.byte 204,0,44
+.byte 84,1,44
+.byte 220,1,44
+.byte 100,2,47
+.byte 236,2,49
+.byte 116,3,51
+.byte 252,3,53
+.byte 74,0,45
+.byte 223,0,45
+.byte 117,1,45
+.byte 10,2,45
+.byte 160,2,48
+.byte 53,3,50
+.byte 203,3,52
+.byte 96,4,54
+.byte 82,0,46
+.byte 246,0,46
+.byte 155,1,46
+.byte 63,2,46
+.byte 228,2,49
+.byte 136,3,51
+.byte 45,4,53
+.byte 209,4,55
+.byte 90,0,47
+.byte 15,1,47
+.byte 196,1,47
+.byte 121,2,47
+.byte 46,3,50
+.byte 227,3,52
+.byte 152,4,54
+.byte 77,5,56
+.byte 99,0,48
+.byte 42,1,48
+.byte 241,1,48
+.byte 184,2,48
+.byte 127,3,51
+.byte 70,4,53
+.byte 13,5,55
+.byte 212,5,57
+.byte 109,0,49
+.byte 72,1,49
+.byte 35,2,49
+.byte 254,2,49
+.byte 217,3,52
+.byte 180,4,54
+.byte 143,5,56
+.byte 106,6,58
+.byte 120,0,50
+.byte 104,1,50
+.byte 89,2,50
+.byte 73,3,50
+.byte 59,4,53
+.byte 43,5,55
+.byte 28,6,57
+.byte 12,7,59
+.byte 132,0,51
+.byte 141,1,51
+.byte 150,2,51
+.byte 159,3,51
+.byte 168,4,54
+.byte 177,5,56
+.byte 186,6,58
+.byte 195,7,60
+.byte 145,0,52
+.byte 180,1,52
+.byte 216,2,52
+.byte 251,3,52
+.byte 31,5,55
+.byte 66,6,57
+.byte 102,7,59
+.byte 137,8,61
+.byte 160,0,53
+.byte 224,1,53
+.byte 33,3,53
+.byte 97,4,53
+.byte 162,5,56
+.byte 226,6,58
+.byte 35,8,60
+.byte 99,9,62
+.byte 176,0,54
+.byte 16,2,54
+.byte 113,3,54
+.byte 209,4,54
+.byte 51,6,57
+.byte 147,7,59
+.byte 244,8,61
+.byte 84,10,63
+.byte 194,0,55
+.byte 70,2,55
+.byte 202,3,55
+.byte 78,5,55
+.byte 210,6,58
+.byte 86,8,60
+.byte 218,9,62
+.byte 94,11,64
+.byte 213,0,56
+.byte 127,2,56
+.byte 42,4,56
+.byte 212,5,56
+.byte 128,7,59
+.byte 42,9,61
+.byte 213,10,63
+.byte 127,12,65
+.byte 234,0,57
+.byte 191,2,57
+.byte 149,4,57
+.byte 106,6,57
+.byte 64,8,60
+.byte 21,10,62
+.byte 235,11,64
+.byte 192,13,66
+.byte 2,1,58
+.byte 6,3,58
+.byte 11,5,58
+.byte 15,7,58
+.byte 20,9,61
+.byte 24,11,63
+.byte 29,13,65
+.byte 33,15,67
+.byte 28,1,59
+.byte 84,3,59
+.byte 140,5,59
+.byte 196,7,59
+.byte 252,9,62
+.byte 52,12,64
+.byte 108,14,66
+.byte 164,16,68
+.byte 56,1,60
+.byte 168,3,60
+.byte 25,6,60
+.byte 137,8,60
+.byte 251,10,63
+.byte 107,13,65
+.byte 220,15,67
+.byte 76,18,69
+.byte 87,1,61
+.byte 6,4,61
+.byte 181,6,61
+.byte 100,9,61
+.byte 20,12,64
+.byte 195,14,66
+.byte 114,17,68
+.byte 33,20,70
+.byte 122,1,62
+.byte 110,4,62
+.byte 98,7,62
+.byte 86,10,62
+.byte 74,13,65
+.byte 62,16,67
+.byte 50,19,69
+.byte 38,22,71
+.byte 159,1,63
+.byte 222,4,63
+.byte 30,8,63
+.byte 93,11,63
+.byte 158,14,66
+.byte 221,17,68
+.byte 29,21,70
+.byte 92,24,72
+.byte 201,1,64
+.byte 92,5,64
+.byte 239,8,64
+.byte 130,12,64
+.byte 21,16,67
+.byte 168,19,69
+.byte 59,23,71
+.byte 206,26,73
+.byte 247,1,65
+.byte 229,5,65
+.byte 212,9,65
+.byte 194,13,65
+.byte 177,17,68
+.byte 159,21,70
+.byte 142,25,72
+.byte 124,29,74
+.byte 41,2,66
+.byte 124,6,66
+.byte 207,10,66
+.byte 34,15,66
+.byte 117,19,69
+.byte 200,23,71
+.byte 27,28,73
+.byte 110,32,75
+.byte 96,2,67
+.byte 33,7,67
+.byte 227,11,67
+.byte 164,16,67
+.byte 103,21,70
+.byte 40,26,72
+.byte 234,30,74
+.byte 171,35,76
+.byte 157,2,68
+.byte 216,7,68
+.byte 20,13,68
+.byte 79,18,68
+.byte 139,23,71
+.byte 198,28,73
+.byte 2,34,75
+.byte 61,39,77
+.byte 224,2,69
+.byte 161,8,69
+.byte 99,14,69
+.byte 36,20,69
+.byte 230,25,72
+.byte 167,31,74
+.byte 105,37,76
+.byte 42,43,78
+.byte 42,3,70
+.byte 127,9,70
+.byte 212,15,70
+.byte 41,22,70
+.byte 126,28,73
+.byte 211,34,75
+.byte 40,41,77
+.byte 125,47,79
+.byte 123,3,71
+.byte 114,10,71
+.byte 105,17,71
+.byte 96,24,71
+.byte 87,31,74
+.byte 78,38,76
+.byte 69,45,78
+.byte 60,52,80
+.byte 212,3,72
+.byte 125,11,72
+.byte 38,19,72
+.byte 207,26,72
+.byte 121,34,75
+.byte 34,42,77
+.byte 203,49,79
+.byte 116,57,81
+.byte 54,4,73
+.byte 163,12,73
+.byte 17,21,73
+.byte 126,29,73
+.byte 236,37,76
+.byte 89,46,78
+.byte 199,54,80
+.byte 52,63,82
+.byte 162,4,74
+.byte 231,13,74
+.byte 44,23,74
+.byte 113,32,74
+.byte 183,41,77
+.byte 252,50,79
+.byte 65,60,81
+.byte 134,69,83
+.byte 25,5,75
+.byte 75,15,75
+.byte 126,25,75
+.byte 176,35,75
+.byte 227,45,78
+.byte 21,56,80
+.byte 72,66,82
+.byte 122,76,84
+.byte 155,5,76
+.byte 210,16,76
+.byte 10,28,76
+.byte 65,39,76
+.byte 122,50,79
+.byte 177,61,81
+.byte 233,72,83
+.byte 32,84,85
+.byte 43,6,77
+.byte 129,18,77
+.byte 216,30,77
+.byte 46,43,77
+.byte 134,55,80
+.byte 220,67,82
+.byte 51,80,84
+.byte 137,92,86
+.byte 201,6,78
+.byte 91,20,78
+.byte 238,33,78
+.byte 128,47,78
+.byte 20,61,81
+.byte 166,74,83
+.byte 57,88,85
+.byte 203,101,87
+.byte 119,7,79
+.byte 101,22,79
+.byte 83,37,79
+.byte 65,52,79
+.byte 48,67,82
+.byte 30,82,84
+.byte 12,97,86
+.byte 250,111,88
+.byte 54,8,80
+.byte 162,24,80
+.byte 15,41,80
+.byte 123,57,80
+.byte 232,73,83
+.byte 84,90,85
+.byte 193,106,87
+.byte 45,123,88
+.byte 8,9,81
+.byte 25,27,81
+.byte 42,45,81
+.byte 59,63,81
+.byte 76,81,84
+.byte 93,99,86
+.byte 110,117,88
+.byte 127,135,88
+.byte 239,9,82
+.byte 206,29,82
+.byte 174,49,82
+.byte 141,69,82
+.byte 109,89,85
+.byte 76,109,87
+.byte 44,129,88
+.byte 11,149,88
+.byte 238,10,83
+.byte 202,32,83
+.byte 166,54,83
+.byte 130,76,83
+.byte 95,98,86
+.byte 59,120,88
+.byte 23,142,88
+.byte 243,163,88
+.byte 5,12,84
+.byte 16,36,84
+.byte 28,60,84
+.byte 39,84,84
+.byte 52,108,87
+.byte 63,132,88
+.byte 75,156,88
+.byte 86,180,88
+.byte 57,13,85
+.byte 172,39,85
+.byte 32,66,85
+.byte 147,92,85
+.byte 7,119,88
+.byte 122,145,88
+.byte 238,171,88
+.byte 97,198,88
+.byte 140,14,86
+.byte 164,43,86
+.byte 189,72,86
+.byte 213,101,86
+.byte 238,130,88
+.byte 6,160,88
+.byte 31,189,88
+.byte 55,218,88
+.byte 255,15,87
+.byte 254,47,87
+.byte 254,79,87
+.byte 253,111,87
+.byte 254,143,88
+.byte 253,175,88
+.byte 253,207,88
+.byte 252,239,88
+.section .text._dv_scale,"ax",@progbits
+.global _dv_scale
+_dv_scale:
+ push ix
+ ld ix,0
+ add ix,sp
+ ld a,(ix+9)
+ ld b,a
+ ld a,7
+ sub b
+ ld (.Lscale_jump+1),a
+ ld ix,(ix+6)
+ ld bc,1000
+.Lscale:
+ ld l,(ix+0)
+ ld h,(ix+1)
+ ld e,l
+ ld d,h
+ add hl,hl
+ add hl,de
+.Lscale_jump:
+ jr .Lshift4
+ add hl,hl
+ add hl,hl
+ add hl,hl
+.Lshift4:
+ add hl,hl
+ add hl,hl
+ add hl,hl
+ add hl,hl
+ ld (ix+0),l
+ ld (ix+1),h
+ inc ix
+ inc ix
+ dec bc
+ ld a,b
+ or c
+ jr nz,.Lscale
+ pop ix
+ ret

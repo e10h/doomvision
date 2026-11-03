@@ -4,7 +4,7 @@ const root=fileURLToPath(new URL('../',import.meta.url)),out=root+'clip-build/';
 execFileSync('ffmpeg',['-y','-v','error','-i',process.env.CE_SOURCE??root+'../public/samples/never-gonna-give-you-up-30s.mp3','-t','8','-f','s16le','-ac','1','-ar','8000',out+'clip.pcm']);
 execFileSync(process.execPath,[root+'tools/build-song.mjs',out+'clip.pcm'],{env:{...process.env,CE_OUTPUT:out,CE_COLORS:'6'},stdio:'inherit'});
 execFileSync('ffmpeg',['-y','-v','error','-i',root+'../public/samples/piano-c4.ogg','-af','apad,volume=2','-t','8','-f','s8','-ac','1','-ar','8000',out+'piano.s8']);
-for(const name of ['render.h','audio-encoder.h','piano.h'])copyFileSync(root+'src/'+name,out+'src/'+name);
+for(const name of ['render.h','audio-encoder.h','piano.h','base6-table.h','fast.S'])copyFileSync(root+'src/'+name,out+'src/'+name);
 copyFileSync(root+'templates/clip-main.c',out+'src/main.c');
 // Store ADPCM source blocks, not pre-expanded optical frames. Both sounds are
 // encoded into complete normal audio packets on the calculator itself.

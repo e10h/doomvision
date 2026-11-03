@@ -25,6 +25,16 @@ static void render_background(uint8_t*v){
  for(i=0;i<=SONG_ROWS;i++)ye[i]=py(32)+(i*(py(128)-py(32))+SONG_ROWS/2)/SONG_ROWS;
  for(i=0;i<4;i++){int x=px(xy[i][0]),y=py(xy[i][1]);rect(v,x-12,y-12,24,24,16);rect(v,x-8,y-8,16,16,23);rect(v,x-5,y-5,10,10,16);rect(v,x-3,py(dy[i])-3,6,6,dots[i]);}
 }
+#if defined(__ez80__) && SONG_COLORS == 6
+extern void dv_unpack(const uint8_t*,uint8_t*,unsigned int,const uint8_t*);
+extern void dv_stretch(uint8_t*,const uint8_t*,const uint8_t*);
+static uint8_t expanded[(SONG_COLS-SONG_PILOTS)*SONG_ROWS+3];
+static void render(uint8_t*v,const uint8_t*frame){
+ unsigned int r,y;uint8_t cells[96]={0,1,2,3,4,5},line[267];const uint8_t*source=expanded;
+ dv_unpack(frame,expanded,SONG_FRAME_BYTES,&triplets[0][0]);memset(expanded+SONG_SYMBOLS,0,sizeof(expanded)-SONG_SYMBOLS);
+ for(r=0;r<SONG_ROWS;r++){uint8_t*row=v+ye[r]*320+xe[0];memcpy(cells+6,source,90);source+=90;dv_stretch(line,cells,widths);for(y=ye[r];y<ye[r+1];y++){memcpy(row,line,266);row+=320;}}
+}
+#else
 static void render(uint8_t*v,const uint8_t*frame){
  unsigned int r,c,n=0,y;uint8_t line[267];
 #if SONG_COLORS == 6
@@ -52,4 +62,5 @@ static void render(uint8_t*v,const uint8_t*frame){
  for(y=ye[r];y<ye[r+1];y++){memcpy(row,line,w);row+=320;}}
  }
 }
+#endif
 #endif

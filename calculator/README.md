@@ -10,7 +10,7 @@ Download `public/downloads/DVSUN8.8xp` and run `DVSUN8`. One calculator file con
 - **MODE**: toggle sampled piano / Rick. A tiny `P` marks piano mode.
 - In piano mode all **48 scanable note keys** trigger pitched recordings, spanning C3–B6; up to eight sampled voices ring together. MODE is reserved; the hardware ON key is outside the scanned matrix. CLEAR and 2nd are note keys in piano mode. Press MODE, then Clear to exit.
 
-The calculator resamples and mixes the recording, creates 1,000 PCM samples per audio frame, and encodes actual IMA ADPCM audio locally. Both modes use the ordinary DVA5 audio packets, Reed–Solomon protection and CRC. **No key-state commands or browser synthesizer are used.** The reader plays the decoded audio with a 125 ms minimum buffer. The panel and measured FPS counter remain unchanged. Hardware FPS and interactive latency still require a physical-device test.
+The calculator resamples and mixes the recording, creates 1,000 PCM samples per audio frame, and encodes actual IMA ADPCM audio locally. Both modes use the ordinary DVA5 audio packets, Reed–Solomon protection and CRC. **No key-state commands or browser synthesizer are used.** The reader plays the decoded audio with a 125 ms minimum buffer. The panel and measured FPS counter remain unchanged. The sampled mix, ADPCM encoder, Reed–Solomon loop, base-six conversion and grid renderer use eZ80 assembly kernels and lookup tables. Measured isolated CPU frame work at 48 MHz is **87.7 ms for one voice / 109.5 ms for eight voices**, below the 125 ms budget for 8 fps. Keyboard/UI, LCD DMA, OS and camera overhead are excluded; actual FPS and interactive latency still require a physical-device test.
 
 Piano source: [Meta Piano C4, velocity 3](https://github.com/facebookincubator/Meta-open-sound/tree/main/systems/instruments/meta-piano), CC0 public domain. `piano-c4.ogg` is the source recording; the build trims/pads to eight seconds, converts it to 8 kHz signed PCM8 for storage, and outputs 32 kbps IMA audio. Notes resample this real recording; higher pitches have a shorter decay. The 8-bit storage is a sound-quality tradeoff that allows both recordings in one compressed program.
 
@@ -55,3 +55,16 @@ node tools/verify.mjs
 ```
 
 `build-song.mjs` uses the website's Rust/WASM encoder to generate every protected frame in advance. The CE renders packed nibbles and row calibration pilots using the same alignment geometry as the browser sender. Archived banks are read directly without loading the song into RAM. Only file reads occur after bank pointers are cached.
+
+## ROM-free native performance verification
+
+The previous C implementation spent about 989 ms on an eight-voice frame; the optimized native kernels take about 109.5 ms. `benchmarks/ez80-timing.json` records stage timings, CEmu revision and limitations. These are measured CPU cycles, not a physical-device FPS claim. Compile with `-fno-omit-frame-pointer`; omitting it exposed invalid frame-register reuse in the toolchain during native testing.
+
+After building the clip, use a local CEmu checkout (no TI ROM is required):
+
+```
+python3 tools/bench-ez80.py --cemu /path/to/CEmu
+node tools/verify-ez80.mjs
+```
+
+The benchmark executes the compiled eZ80 mixing, IMA ADPCM, RS, base-six and pixel routines. One/eight-voice piano, silence, alternating full-scale, ramp and deterministic random inputs must match portable C PCM/packets/pixels exactly. The Rust test then verifies each native audio packet and decodes its actual rendered barcode.

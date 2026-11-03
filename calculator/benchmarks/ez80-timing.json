@@ -1,0 +1,37 @@
+{
+  "cpu_hz": 48000000,
+  "asic": "I",
+  "timings": {
+    "1": {
+      "stages_ms": {
+        "bench_init": 161.328,
+        "bench_prepare": 0.146,
+        "bench_mix": 6.868,
+        "bench_pcm": 20.869,
+        "bench_crc": 4.962,
+        "bench_rs": 22.108,
+        "bench_symbols": 15.004,
+        "bench_transport": 42.053,
+        "bench_render": 17.92
+      },
+      "frame_ms": 87.71
+    },
+    "8": {
+      "stages_ms": {
+        "bench_init": 161.328,
+        "bench_prepare": 0.357,
+        "bench_mix": 28.797,
+        "bench_pcm": 20.855,
+        "bench_crc": 4.962,
+        "bench_rs": 22.046,
+        "bench_symbols": 15.006,
+        "bench_transport": 41.968,
+        "bench_render": 17.92
+      },
+      "frame_ms": 109.54
+    }
+  },
+  "native_parity_cases": 6,
+  "cemu_commit": "d7679d04c44741359b1f3a0444ff4eea99c34369",
+  "limits": "Isolated CPU kernels, no calculator OS, camera, keyboard/UI or LCD DMA overhead. Physical FPS is not measured."
+}
