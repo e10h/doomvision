@@ -9,10 +9,10 @@
 #include "wire.h"
 /* Explicit USB wire bytes: C struct padding must not enter descriptors. */
 static const uint8_t configuration_bytes[25]={9,USB_CONFIGURATION_DESCRIPTOR,25,0,1,1,0,0x80|USB_BUS_POWERED|USB_NO_REMOTE_WAKEUP,50,9,USB_INTERFACE_DESCRIPTOR,0,0,1,USB_VENDOR_SPECIFIC_CLASS,0x44,1,0,7,USB_ENDPOINT_DESCRIPTOR,0x81,USB_BULK_TRANSFER,64,0,0};
-static usb_device_descriptor_t device={18,USB_DEVICE_DESCRIPTOR,0x0200,0,0,0,64,0x0451,0xe008,0x0104,0,1,0,1};
+static usb_device_descriptor_t device={18,USB_DEVICE_DESCRIPTOR,0x0200,0,0,0,64,0x0451,0xe008,0x0105,0,1,0,1};
 _Static_assert(sizeof(device)==18,"USB device descriptor packing");
 static const usb_configuration_descriptor_t* configs[]={(const usb_configuration_descriptor_t*)configuration_bytes};
-static const usb_string_descriptor_t product={.bLength=32,.bDescriptorType=USB_STRING_DESCRIPTOR,.bString=L"Doomvision PCM4"};
+static const usb_string_descriptor_t product={.bLength=32,.bDescriptorType=USB_STRING_DESCRIPTOR,.bString=L"Doomvision PCM5"};
 static const usb_string_descriptor_t lang={.bLength=4,.bDescriptorType=USB_STRING_DESCRIPTOR,.bString={0x0409}};
 static const usb_string_descriptor_t* strings[]={&product};
 static const usb_standard_descriptors_t descriptors={&device,configs,&lang,1,strings};
@@ -26,9 +26,9 @@ static unsigned int cur_block,cur_pos;static int pred,ima_index;
 static void clip_block(void){unsigned int i;for(i=0;i<128;i++){const uint8_t*b=rick_adpcm+cur_block*502;uint8_t code;int step,delta;if(!cur_pos){pred=(int16_t)((unsigned int)b[0]|((unsigned int)b[1]<<8));ima_index=32;}code=(b[2+cur_pos/2]>>((cur_pos&1)*4))&15;step=steps[ima_index];delta=(step>>3)+((code&4)?step:0)+((code&2)?step>>1:0)+((code&1)?step>>2:0);pred+=(code&8)?-delta:delta;if(pred>32767)pred=32767;if(pred< -32768)pred=-32768;ima_index+=adjust[code&7];if(ima_index<0)ima_index=0;if(ima_index>88)ima_index=88;pcm[i]=pred;if(++cur_pos==1000){cur_pos=0;if(++cur_block==RICK_BLOCKS)cur_block=0;}}}
 
 int main(void){uint8_t previous[7]={0},old_y=0,old_second=0,old_enter=0,synth=1,paused=0;unsigned int last=0,ui=0;usb_error_t error;
- gfx_Begin();gfx_FillScreen(255);gfx_SetTextFGColor(0);gfx_PrintStringXY("DVUSB4 - 16kHz audio",12,12);gfx_PrintStringXY("Y= piano/Rick  2nd play/pause",12,30);gfx_PrintStringXY("ENTER restart / CLEAR exit",12,46);
+ gfx_Begin();gfx_FillScreen(255);gfx_SetTextFGColor(0);gfx_PrintStringXY("DVUSB5 - 16kHz audio",12,12);gfx_PrintStringXY("Y= piano/Rick  2nd play/pause",12,30);gfx_PrintStringXY("ENTER restart / CLEAR exit",12,46);
  error=usb_Init(event,NULL,&descriptors,USB_DEFAULT_INIT_FLAGS);if(error!=USB_SUCCESS){gfx_PrintStringXY("USB init failed",12,80);kb_AnyKey();usb_Cleanup();gfx_End();return 1;}
- kb_SetMode(MODE_3_CONTINUOUS);
+ __asm__ volatile("di");kb_EnableInt=0;kb_SetMode(MODE_3_CONTINUOUS);
  while(1){uint8_t y,second,enter,row,bit;unsigned int now;usb_HandleEvents();if(kb_Data[6]&kb_Clear)break;y=!!(kb_Data[1]&kb_Yequ);second=!!(kb_Data[1]&kb_2nd);enter=!!(kb_Data[6]&kb_Enter);if(y&&!old_y){synth=!synth;paused=0;memset(voices,0,sizeof voices);ui=0;}if(!synth&&second&&!old_second){paused=!paused;ui=0;}if(!synth&&enter&&!old_enter){cur_block=0;cur_pos=0;}old_y=y;old_second=second;old_enter=enter;
  for(row=0;row<7;row++){uint8_t keys=kb_Data[row+1]&key_masks[row],fresh=keys&~previous[row];if(synth)for(bit=0;bit<8;bit++)if(fresh&(1<<bit))note_on(key_notes[row][bit]);previous[row]=keys;}
  now=usb_GetFrameNumber()&0x3ff8;if(clock_sync){last=now;clock_sync=0;}if(endpoint&&((now-last)&0x3fff)>=64){uint8_t i;for(i=0;i<8;i++)if(!slots[i].busy)break;if(i<8){if(((now-last)&0x3fff)>512)last=now;else last=(last+64)&0x3fff;Slot*s=&slots[i];if(synth)piano_block();else if(paused)memset(pcm,0,sizeof pcm);else clip_block();usb_audio_packet(s->data,sequence++,synth?1:paused?2:0,pcm);s->busy=1;if(usb_ScheduleBulkTransfer(endpoint,s->data,AUDIO_PACKET_BYTES,complete,s)!=USB_SUCCESS){s->busy=0;errors++;last=now;}}}

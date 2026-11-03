@@ -6,11 +6,11 @@ key messages or browser camera is used for this transport.
 
 ## First connection
 
-1. Transfer `DVUSB4.8xp` with TI Connect CE. It is separate from the optical
+1. Transfer `DVUSB5.8xp` with TI Connect CE. It is separate from the optical
    `DVSUN8` program. If requested by the launcher, archive `USBDRVCE.8xv` too.
    The standard CE libraries/launcher used by the optical program are required.
-2. Close TI Connect CE. Run DVUSB4. Unplug/replug its data cable once while
-   DVUSB4 runs, allowing macOS to enumerate the custom audio interface.
+2. Close TI Connect CE. Run DVUSB5. Unplug/replug its data cable once while
+   DVUSB5 runs, allowing macOS to enumerate the custom audio interface.
 3. Run `./doomvision-usb` on the Mac, or `cargo run --release` in this directory.
    The receiver waits for the sender and reconnects after disconnects.
 4. The calculator starts in piano mode with the C4–E5 piano key layout.
@@ -21,7 +21,7 @@ key messages or browser camera is used for this transport.
 The Mac reports: sender discovered → interface claimed → PCM received → audio
 queued. A USB-configured calculator screen only confirms enumeration; completed
 chunk counters and the Mac's PCM log confirm that the host is actually reading.
-If claim/open fails, close TI Connect CE. To retry, CLEAR, run DVUSB4 again and
+If claim/open fails, close TI Connect CE. To retry, CLEAR, run DVUSB5 again and
 reconnect the cable. A charge-only cable cannot carry the stream.
 
 ## Tools and validation
@@ -63,7 +63,7 @@ Piano source/license: ../public/samples/piano-c4.txt (Meta Piano, CC0).
 
 ## 16 kHz repair
 
-DVUSB4 is one calculator program. The Rick excerpt is 6 seconds at 16 kHz to fit
+DVUSB5 is one calculator program. The Rick excerpt is 6 seconds at 16 kHz to fit
 the one-file budget. The piano retains the full 64,000-sample / 8-second compact
 8 kHz recording, plays it at the correct pitch into a 16 kHz output stream, and
 softly fades/gates its quantization-dominated quiet tail. Outputting 16 kHz cannot
@@ -77,3 +77,10 @@ audio-loop iteration had limited the 16 kHz stream to roughly 89 chunks/s rather
 than the required 125. USB SOF deadlines advance without accumulating loop drift.
 The Mac supports both 8/16 kHz, clears old samples on a rate change and uses a
 64 ms jitter buffer without per-sample queue-driven pitch modulation.
+
+The receiver now requires the live product identity `Doomvision PCM5`. This avoids
+claiming older broken firmware or a stale cached interface after returning to
+TI file-transfer mode. DVUSB5 retains explicit CPU interrupt protection and masks
+keypad interrupts while using continuous keypad scanning; synchronous kb_Scan
+had previously supplied the DI side effect. The 125-chunk/s live target must still
+be checked on DVUSB5 hardware before treating the stutter repair as verified.
