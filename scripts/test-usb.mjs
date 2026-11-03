@@ -18,3 +18,18 @@ assert.equal(processor.underruns,0);assert.equal(processor.dropped,0);
 push(10000);assert.ok(processor.dropped>0);assert.ok(processor.write-processor.read<=3200);
 push(128,8000);assert.equal(processor.primed,false);assert.equal(processor.write-processor.read,128);
 console.log('USB packet framing, 10-second 16kHz playback, bounded queue and rate-change tests passed.');
+// Game Boy audio arrives in video-sized bursts; keep its queue primed while
+// applying the DC filter offloaded from the calculator's sample loop.
+const game=new Processor();
+const feed=(n)=>game.port.onmessage({data:{rate:16000,flags:4,pcm:new Float32Array(n).fill(.25)}});
+feed(2048);
+let next=0,generated=0,stepIndex=0,lastOutput;
+const waits=[16,25,70,35,60];
+for(let frame=0;frame<480000;frame+=128){
+  if(frame>=next){const target=Math.floor(frame/3);feed(target-generated);generated=target;next+=waits[stepIndex++%waits.length]*48;}
+  lastOutput=new Float32Array(128);game.process([],[[lastOutput]]);
+  assert.ok(lastOutput.every(Number.isFinite));
+}
+assert.equal(game.underruns,0);assert.equal(game.dropped,0);
+assert.ok(lastOutput.every(v=>Math.abs(v)<.0001),'Game Boy DC was not filtered');
+console.log('Game Boy 16–70 ms burst buffering and output DC rejection passed.');

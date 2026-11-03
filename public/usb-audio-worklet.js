@@ -2,11 +2,14 @@ class UsbAudio extends AudioWorkletProcessor {
   constructor() {
     super();
     this.ring = new Float32Array(8192); this.read=0; this.write=0;
+    this.gameBoy=false;this.filterX=0;this.filterY=0;this.dcCoefficient=Math.exp(-2*Math.PI*5/sampleRate);
     this.rate=16000; this.phase=0; this.primed=false; this.underruns=0; this.dropped=0; this.frames=0;
     this.port.onmessage=({data})=>{
+      const gameBoy=!!(data.flags&4);
+      if(gameBoy!==this.gameBoy){this.filterX=this.filterY=0;this.gameBoy=gameBoy;}
       if(data.rate!==this.rate) { this.read=this.write=0; this.phase=0; this.primed=false; this.rate=data.rate; }
       for(const v of data.pcm) this.ring[this.write++%8192]=v;
-      const max=Math.round(this.rate*.2);
+      const max=Math.round(this.rate*(this.gameBoy?.32:.2));
       if(this.write-this.read>max){const skip=this.write-this.read-max;this.read+=skip;this.dropped+=skip;}
     };
   }
@@ -14,7 +17,7 @@ class UsbAudio extends AudioWorkletProcessor {
     const out=outputs[0]; if(!out?.length)return true;
     for(let i=0;i<out[0].length;i++) {
       let value=0;
-      if(!this.primed && this.write-this.read>=this.rate*.064) this.primed=true;
+      if(!this.primed && this.write-this.read>=this.rate*(this.gameBoy?.128:.064)) this.primed=true;
       if(this.primed) {
         if(this.write-this.read<4){this.primed=false;this.underruns++;}
         else {
@@ -24,6 +27,7 @@ class UsbAudio extends AudioWorkletProcessor {
           const step=Math.floor(this.phase);this.read+=step;this.phase-=step;
         }
       }
+      if(this.gameBoy){const filtered=value-this.filterX+this.dcCoefficient*this.filterY;this.filterX=value;this.filterY=filtered;value=Math.max(-1,Math.min(1,filtered));}
       for(const channel of out)channel[i]=value;
     }
     this.frames+=out[0].length;

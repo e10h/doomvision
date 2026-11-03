@@ -44,8 +44,8 @@ export default function UsbReceiver() {
       await resume;
       const device=await chosen;s.device=device;setDeviceName(device.productName??"Calculator");
       if(!s.active){cleanup(s);return;}
-      if(/^TI-Boy CE PCM[123]$/.test(device.productName??""))throw Error(`The calculator is still running ${device.productName}. Transfer TIBUSB4 and TBUSB004, exit the old program, then run TIBUSB4 and reconnect its cable.`);
-      if(!/^(Doomvision PCM[56]|TI-Boy CE PCM4)$/.test(device.productName??""))throw Error("Run DVUSB6 or TIBUSB4, reconnect the cable, then select its PCM audio device.");
+      if(/^TI-Boy CE PCM[1234]$/.test(device.productName??""))throw Error(`The calculator is still running ${device.productName}. Transfer TIBUSB5 and TBUSB005, exit the old program, then run TIBUSB5 and reconnect its cable.`);
+      if(!/^(Doomvision PCM[56]|TI-Boy CE PCM5)$/.test(device.productName??""))throw Error("Run DVUSB6 or TIBUSB5, reconnect the cable, then select its PCM audio device.");
       setStatus("Opening calculator…");
       await device.open();
       if(!device.configuration)await device.selectConfiguration(1);
@@ -72,7 +72,7 @@ export default function UsbReceiver() {
         for(const packet of decoder.feed(new Uint8Array(result.data.buffer,result.data.byteOffset,result.data.byteLength))){
           if(last===packet.sequence)continue;
           if(last!==undefined){const gap=(packet.sequence-last-1)>>>0;if(gap<100000)missing+=gap;}last=packet.sequence;
-          node.port.postMessage({pcm:packet.pcm,rate:packet.rate},[packet.pcm.buffer]);chunks++;
+          node.port.postMessage({pcm:packet.pcm,rate:packet.rate,flags:packet.flags},[packet.pcm.buffer]);chunks++;
           const elapsed=performance.now()-rateStart;if(elapsed>=1000){pps=Math.round((chunks-rateChunks)*1000/elapsed);rateStart=performance.now();rateChunks=chunks;}
           if(performance.now()-report>250||chunks===1){setStatus("Streaming audio");setStats(prev=>({...prev,chunks,pps,missing,rate:packet.rate,mode:packet.flags&4?"Game Boy":packet.flags&1?"Piano":packet.flags&2?"Paused":"Rick clip"}));report=performance.now();}
         }
@@ -90,9 +90,9 @@ export default function UsbReceiver() {
       <div className={styles.stats}>{deviceName&&<span>{deviceName}</span>}<span>{connected?stats.mode:"Live waveform"}</span><span>{stats.rate/1000} kHz · mono</span><span>{stats.chunks.toLocaleString()} chunks · {stats.pps}/s</span><span>{stats.queued} ms buffered</span></div>
     </section>
     {error&&<p role="alert" className={styles.error}>{error}</p>}
-    <p className={styles.hint}>Choose <strong>Doomvision PCM6</strong> or <strong>TI-Boy CE PCM4</strong> in the device picker. Use Chrome or Edge on Mac.<br/>Close TI Connect CE and the native receiver first. DVUSB6: Y= switches piano / clip. TI-Boy: use the game’s controls.</p>
-    {connected&&<p className={styles.health}>{stats.underruns} audio underruns · {stats.dropped} dropped samples · {stats.missing} missing USB chunks</p>}
+    <p className={styles.hint}>Choose <strong>Doomvision PCM6</strong> or <strong>TI-Boy CE PCM5</strong> in the device picker. Use Chrome or Edge on Mac.<br/>Close TI Connect CE and the native receiver first. DVUSB6: Y= switches piano / clip. TI-Boy: use the game’s controls.</p>
+    {(connected||stats.chunks>0)&&<p className={styles.health}>{stats.underruns} audio underruns · {stats.dropped} dropped samples · {stats.missing} missing USB chunks</p>}
     <a className={styles.download} href="/downloads/DVUSB6.8xp">Download DVUSB6 ↗</a>{" · "}
-    <a className={styles.download} href="/downloads/tiboyce-usb-audio-4.zip">Download TI-Boy USB prototype ↗</a>
+    <a className={styles.download} href="/downloads/TBAUD5.8xg">Download TI-Boy USB prototype ↗</a>
   </main>;
 }
