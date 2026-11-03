@@ -1,3 +1,16 @@
+## Native Mac waveform window
+
+Double-click `Doomvision.app` in the Mac download bundle. The receiver is written
+in Rust and draws directly in a native AppKit window. Its waveform follows the
+resampled samples sent to the Mac audio output; no browser or web server runs.
+The window title shows connection state, piano/clip mode and source sample rate.
+Close the window to stop the receiver and release USB. Run only one receiver at
+a time and close TI Connect CE before connecting DVUSB6.
+
+The display reads a fixed atomic sample ring, so drawing does not lock the audio
+callback. Existing command-line self-test, replay and device-list options remain.
+Build and package on macOS with `python3 package-mac.py`.
+
 # Doomvision USB audio — Mac prototype
 
 Actual sampled audio travels from the TI-84 Plus CE over USB bulk IN (0x81).

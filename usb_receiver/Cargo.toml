@@ -7,3 +7,9 @@ anyhow = "1.0"
 cpal = "0.15.3"
 rusb = { version = "0.9.4", features = ["vendored"] }
 ctrlc = "3.5"
+
+cocoa = "0.24"
+objc = "0.2"
+
+[features]
+cargo-clippy = []

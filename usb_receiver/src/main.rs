@@ -1,4 +1,5 @@
 mod audio;
+mod gui;
 mod protocol;
 use anyhow::{bail, Context, Result};
 use rusb::UsbContext;
@@ -87,6 +88,26 @@ fn find(context: &rusb::Context, list: bool) -> Result<Option<rusb::Device<rusb:
     Ok(found)
 }
 fn main() -> Result<()> {
+    let scope = Arc::new(gui::Scope::new());
+    let running = Arc::new(AtomicBool::new(true));
+    if std::env::args().len() > 1 {
+        return receive(scope, running);
+    }
+    let s = scope.clone();
+    let r = running.clone();
+    let worker = thread::spawn(move || {
+        let result = receive(s, r.clone());
+        if let Err(e) = result {
+            eprintln!("Receiver error: {e:#}");
+        }
+        r.store(false, Ordering::Relaxed);
+    });
+    gui::run(scope, running.clone());
+    running.store(false, Ordering::Relaxed);
+    let _ = worker.join();
+    Ok(())
+}
+fn receive(scope: Arc<gui::Scope>, running: Arc<AtomicBool>) -> Result<()> {
     let args: Vec<String> = std::env::args().collect();
     if args.iter().any(|x| x == "--list") {
         let context = rusb::Context::new().context("Initialize libusb")?;
@@ -95,7 +116,6 @@ fn main() -> Result<()> {
         }
         return Ok(());
     }
-    let running = Arc::new(AtomicBool::new(true));
     let flag = running.clone();
     ctrlc::set_handler(move || flag.store(false, Ordering::Relaxed))?;
     if args.iter().any(|x| x == "--self-test") {
@@ -159,6 +179,7 @@ fn main() -> Result<()> {
             continue;
         }
         let (_stream, buffer) = audio::start()?;
+        buffer.lock().unwrap().scope = scope.clone();
         let mut decoder = protocol::Decoder::default();
         let mut bytes = [0u8; 4096];
         let mut last = None;
@@ -179,6 +200,9 @@ fn main() -> Result<()> {
                                 eprintln!("Audio sequence changed: {prev} → {}", p.sequence);
                             }
                         }
+                        scope.connected.store(true, Ordering::Relaxed);
+                        scope.rate.store(p.rate, Ordering::Relaxed);
+                        scope.flags.store(p.flags as u32, Ordering::Relaxed);
                         last = Some(p.sequence);
                         flags = p.flags;
                         for s in &p.pcm {
@@ -222,6 +246,7 @@ fn main() -> Result<()> {
                 report = Instant::now();
             }
         }
+        scope.connected.store(false, Ordering::Relaxed);
         let _ = handle.release_interface(0);
     }
     Ok(())

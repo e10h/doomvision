@@ -5,6 +5,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 pub struct Buffer {
+    pub scope: Arc<crate::gui::Scope>,
     queue: VecDeque<i16>,
     pub source_rate: u32,
     p0: f32,
@@ -19,6 +20,7 @@ pub struct Buffer {
 impl Default for Buffer {
     fn default() -> Self {
         Self {
+            scope: Arc::new(crate::gui::Scope::new()),
             queue: VecDeque::new(),
             source_rate: 16000,
             p0: 0.,
@@ -140,6 +142,7 @@ fn build<T: cpal::SizedSample + cpal::FromSample<f32>>(
             if let Ok(mut b) = buffer.try_lock() {
                 for frame in out.chunks_mut(channels) {
                     let sample = b.next(rate);
+                    b.scope.record(sample);
                     for v in frame {
                         *v = T::from_sample(sample);
                     }
