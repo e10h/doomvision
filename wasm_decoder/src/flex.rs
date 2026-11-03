@@ -42,7 +42,7 @@ impl Profile {
     pub(crate) fn copies(self) -> [usize; 3] {
         [0, (self.n - 10) / 2, self.n - 10]
     }
-    fn positions(self) -> Vec<usize> {
+    pub(crate) fn positions(self) -> Vec<usize> {
         (0..self.n)
             .filter(|i| !self.copies().iter().any(|s| *i >= *s && *i < *s + 10))
             .take(self.lanes * (self.lane_data + 32))
@@ -514,4 +514,12 @@ pub unsafe extern "C" fn flex_trial(
         captures: 0,
     };
     receive(&mut trial, rgba, iw, ih, x, y, w, h, out, metrics, dx, dy)
+}
+
+pub(crate) fn unchecked_packet(e:&[u8],p:Profile,out:&mut[u8]){
+ let positions=p.positions();for lane in 0..p.lanes{let start=223-p.lane_data;let mut code=[0u8;255];for i in 0..p.lane_data+32{code[start+i]=e[positions[i*p.lanes+lane]];}let mut repaired=code;if rs::repair(&mut repaired).is_some(){code=repaired;}out[lane*p.lane_data..(lane+1)*p.lane_data].copy_from_slice(&code[start..223]);}
+}
+#[no_mangle]pub unsafe extern "C" fn decode_audio_unchecked(packet:*const u8,size:u32,rate:u32,fps:u32,index:u32,out:*mut i16)->i32{
+ if packet.is_null()||out.is_null()||![4,8,16].contains(&fps)||rate<250||rate>32000{return -1;}let n=frame_samples(rate,fps,index);if size<30+n.div_ceil(2)||size>223*32{return -1;}
+ let p=std::slice::from_raw_parts(packet,size as usize);let(mut predictor,mut step_index)=(i16::from_le_bytes(p[22..24].try_into().unwrap())as i32,p[24].min(88)as i32);for(i,s)in std::slice::from_raw_parts_mut(out,n as usize).iter_mut().enumerate(){*s=crate::live::step((p[26+i/2]>>((i%2)*4))&15,&mut predictor,&mut step_index);}n as i32
 }

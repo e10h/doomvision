@@ -16,6 +16,7 @@ export default function LiveOptical() {
   const [sourceBuffer,setSourceBuffer]=useState<AudioBuffer|null>(null),[duration,setDuration]=useState(0),[trackStatus,setTrackStatus]=useState('Full track not loaded');
   const sourceId=useRef(0);
   const lastCameraFrame=useRef<ImageData|null>(null);
+  const [unchecked,setUnchecked]=useState(false);
   const [autoLock,setAutoLock]=useState(true);
   const [tracking,setTracking]=useState('Searching for four alignment markers');
   const [mode,setMode]=useState<'send'|'receive'>('send');
@@ -107,6 +108,7 @@ export default function LiveOptical() {
       try{
         const pixels=ctx.getImageData(0,0,canvas.width,canvas.height);
         lastCameraFrame.current=pixels;
+        c.unchecked=unchecked && plan.colors>6;
         const packet=autoLock?c.autoDecode(pixels):drag.current?null:c.decode(pixels,roi);
         if(packet){const block=c.audio(packet);valid++;index=block.index;total=block.total;p.push(block);}else rejected++;
       }catch(e){setError(String(e));}
@@ -119,7 +121,7 @@ export default function LiveOptical() {
       if(now-ui>200){ui=now;setTracking(c.stage);setStats({valid,rejected,index,played:p.played,late:p.late,audio:p.state,playing:p.playing,captures:c.captures,corrected:c.corrected,confidence:c.confidence,fused:c.fused,concealed:p.concealed,bufferMs:Math.round(p.latencySeconds*1000),rebuffers:p.rebuffers,total});}
     };
     raf=requestAnimationFrame(tick);return()=>cancelAnimationFrame(raf);
-  },[mode,camera,autoLock,plan]);
+  },[mode,camera,autoLock,plan,unchecked]);
   const point=(e:React.PointerEvent<HTMLCanvasElement>)=>{const b=e.currentTarget.getBoundingClientRect(),c=e.currentTarget;return{x:Math.max(0,Math.min(c.width-1,(e.clientX-b.left)*c.width/b.width)),y:Math.max(0,Math.min(c.height-1,(e.clientY-b.top)*c.height/b.height))};};
   return <main style={{maxWidth:1100,margin:'0 auto',padding:20}}>
     <Link href="/" style={{color:'#00d8ff'}}>← Doom receiver</Link>
@@ -169,6 +171,8 @@ export default function LiveOptical() {
       <p>The Mac displays data silently. Open this same page on the iPhone, choose Receive + play, and point its camera at the entire white panel, including all four corner markers. Keep the display bright, level, and awake.</p>
     </section>:<section className="glass-panel" style={{padding:20}}>
       <h2>Scan → decode → play</h2>
+      <label style={{display:'block',padding:12,color:unchecked?'#ffaa00':'inherit'}}><input type="checkbox" checked={unchecked} disabled={plan.colors===6} onChange={e=>{player.current?.reset();codec.current?.resetFusion();setUnchecked(e.target.checked);}}/> Unchecked playback — ignore frame ID / CRC and play best-guess audio (8+ colors)</label>
+      {unchecked && plan.colors>6 && <p role="status" style={{color:'#ffaa00'}}>Checks OFF. Corrupted colors may produce noise. Matching grid settings and visible alignment markers are still required.</p>}
       <p>Auto-lock finds the four corner symbols and corrects the camera angle. Keep the entire white sender panel in view. Hearing a test beep confirms your speaker; music requires valid optical packets.</p>
       <div style={{display:'flex',gap:12,flexWrap:'wrap',marginBottom:16}}>
         <button className="custom-btn active" disabled={!ready || !plan.fits || starting} onClick={camera?stop:start}>{starting?'Opening…':camera?'Stop reception':'Start camera + audio'}</button>
@@ -187,10 +191,10 @@ export default function LiveOptical() {
       <p role="status" style={{color:stats.playing?'#00ff88':'#ffaa00'}}>{!camera?'Camera stopped':!stats.valid?'Scanning: waiting for a verified audio packet':stats.audio!=='running'?'Audio paused — tap Enable audio':stats.playing?'Playing incoming optical audio':'Waiting for the next audio packet'}</p>
       <p role="status">{tracking}</p>
       {!autoLock && <p>Manual fallback: drag tightly around only the colored data grid, excluding the white border and corner markers.</p>}
-      <p>{stats.valid} checksum-valid scans · {stats.played} audio blocks scheduled · {stats.rejected} rejected scans · {stats.late} late blocks · audio: {stats.audio}</p>
+      <p>{stats.valid} {unchecked&&plan.colors>6?'unchecked audio scans':'checksum-valid scans'} · {stats.played} audio blocks scheduled · {stats.rejected} rejected scans · {stats.late} late blocks · audio: {stats.audio}</p>
       <p>Capture combining: {stats.captures} observations of this frame{stats.fused?' · combined recovery':''} · bit/color confidence {stats.confidence}% · FEC repaired {stats.corrected} bytes this scan.</p>
       <p>Playback: target buffer {stats.bufferMs} ms · {stats.concealed} concealed blocks · {stats.rebuffers} rebuffer events.</p>
-      {stats.index>=0 && <p>Received music position: {(stats.index/settings.fps).toFixed(1)}s / {(stats.total/settings.fps).toFixed(1)}s</p>}
+      {stats.index>=0 && <p>{unchecked&&plan.colors>6?'Unchecked output clock:':'Received music position:'} {(stats.index/settings.fps).toFixed(1)}s / {(stats.total/settings.fps).toFixed(1)}s</p>}
       <canvas ref={scope} width={640} height={80} aria-label="Decoded audio waveform" style={{width:'100%',height:80,background:'#08090d'}}/>
       <p>iPhone: raise media volume and check Control Center’s speaker route. If needed, turn Silent Mode off and tap Enable audio again.</p>
     </section>}

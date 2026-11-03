@@ -3,6 +3,8 @@ type LinkProfile=ReturnType<typeof calculateProfile>;
 import type { Roi } from './color';
 export const LIVE_BYTES=446, LIVE_COLS=80, LIVE_ROWS=24, BLOCK_SECONDS=.125;
 export class LiveCodec {
+  public unchecked=false;
+  private rawStart=0;
   public profile:LinkProfile|null=null;
   private rectWidth=640;
   private rectHeight=192;
@@ -46,6 +48,13 @@ export class LiveCodec {
     if(packet.length!==(this.profile?.packetBytes??LIVE_BYTES))throw new Error('Invalid live packet length');
     const m=this.w.memory as WebAssembly.Memory;
     new Uint8Array(m.buffer).set(packet,this.packet);
+    if(this.unchecked&&this.profile&&this.profile.colors!==6){
+      const p=this.profile;if(!this.rawStart)this.rawStart=performance.now();
+      const index=Math.floor((performance.now()-this.rawStart)*p.fps/1000)%60000;
+      const count=(this.w.decode_audio_unchecked as (...n:number[])=>number)(this.packet,p.packetBytes,p.sampleRate,p.fps,index,this.pcm);
+      if(count<=0)throw new Error('Invalid unchecked audio bounds');
+      return {samples:Float32Array.from(new Int16Array(m.buffer,this.pcm,count),v=>v/32768),frameSeconds:1/p.fps,sampleRate:p.sampleRate,id:0x524157,index,total:60000};
+    }
     const count=this.profile?(this.w.decode_audio_v5 as (...p:number[])=>number)(this.packet,this.profile.packetBytes,this.pcm):(this.w.decode_audio_v4 as (...p:number[])=>number)(this.packet,this.pcm);
     if(count<=0)throw new Error('Invalid audio block');
     const samples=Float32Array.from(new Int16Array(m.buffer,this.pcm,count),v=>v/32768);
@@ -75,7 +84,7 @@ export class LiveCodec {
   resetFusion() {if(this.combiner)(this.w[this.profile?(this.profile.colors===6?'flex_free':'palette_free'):'robust_free'] as (p:number)=>void)(this.combiner);this.combiner=this.profile?(this.profile.colors===6?(this.w.flex_new_profile as (...n:number[])=>number)(this.profile.cols,this.profile.rows,this.profile.lanes,this.profile.laneData):(this.w.palette_new as (...n:number[])=>number)(this.profile.cols,this.profile.rows,this.profile.lanes,this.profile.laneData,this.profile.colors)):(this.w.robust_new as ()=>number)();}
   dispose() {if(this.combiner)(this.w[this.profile?(this.profile.colors===6?'flex_free':'palette_free'):'robust_free'] as (p:number)=>void)(this.combiner);this.combiner=0;}
   private receive(image:number,width:number,height:number,roi:Roi) {
-    let ok=(this.w[this.profile?(this.profile.colors===6?'flex_receive':'palette_receive'):'receive_robust_roi'] as (...p:number[])=>number)(this.combiner,image,width,height,Math.round(roi.x),Math.round(roi.y),Math.round(roi.w),Math.round(roi.h),this.packet,this.metrics);
+    let ok=(this.w[this.profile?(this.profile.colors===6?'flex_receive':this.unchecked?'palette_receive_unchecked':'palette_receive'):'receive_robust_roi'] as (...p:number[])=>number)(this.combiner,image,width,height,Math.round(roi.x),Math.round(roi.y),Math.round(roi.w),Math.round(roi.h),this.packet,this.metrics);
     const m=this.w.memory as WebAssembly.Memory;
     let metrics=new Uint32Array(m.buffer,this.metrics,5);
     if(this.profile&&ok!==1&&(metrics[0]===2||metrics[0]===3)){
@@ -87,7 +96,7 @@ export class LiveCodec {
       metrics=new Uint32Array(m.buffer,this.metrics,5);if(ok!==1)metrics.set(saved);
     }
     this.failureCode=metrics[0];this.captures=metrics[1];this.corrected=metrics[2];this.confidence=metrics[3];this.fused=metrics[0]===5;
-    this.stage=['Grid bounds invalid','Calibration colors blurred','Protected frame ID unreadable — check matching settings / try larger cells','Collecting same-frame captures; FEC / CRC not yet valid','Frame verified with Reed–Solomon + CRC','Combined captures verified with Reed–Solomon + CRC','Mixed frame IDs: capture rejected'][metrics[0]]??'Decode failed';
+    this.stage=['Grid bounds invalid','Calibration colors blurred','Protected frame ID unreadable — check matching settings / try larger cells','Collecting same-frame captures; FEC / CRC not yet valid','Frame verified with Reed–Solomon + CRC','Combined captures verified with Reed–Solomon + CRC','Mixed frame IDs: capture rejected','UNCHECKED: best-guess audio, ID / CRC ignored'][metrics[0]]??'Decode failed';
     return ok===1?new Uint8Array(m.buffer,this.packet,this.profile?.packetBytes??LIVE_BYTES).slice():null;
   }
   autoDecode(data:ImageData) {
@@ -116,7 +125,7 @@ export class LiveCodec {
       const packet=this.receive(this.rectified,this.rectWidth,this.rectHeight,{x:0,y:0,w:this.rectWidth,h:this.rectHeight});
       const rank=packet?100:this.failureCode===6?40:this.failureCode===3?30:this.failureCode===2?10:0;
       if(!best||rank>best.rank)best={rank,corners,stage:this.stage,captures:this.captures,corrected:this.corrected,confidence:this.confidence,fused:this.fused};
-      if(packet){this.corners=corners;this.stage='✓ Markers + packet orientation verified → '+this.stage;return packet;}
+      if(packet){this.corners=corners;this.stage=(this.unchecked?'UNCHECKED orientation → ':'✓ Markers + packet orientation verified → ')+this.stage;return packet;}
       // A CRC-protected identity establishes orientation even while the body
       // needs further captures. Never use another orientation to pollute it.
       if(this.failureCode===3||this.failureCode===6)break;

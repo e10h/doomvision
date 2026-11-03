@@ -104,3 +104,18 @@ bytes. A 1024-color capture was rejected with an unreadable protected identity.
 These are individual scaled browser screenshots, not camera trials or measured
 bit-error rates. The high-order modes remain available for experimentation,
 but successful simulated decoding must not be read as real-screen reliability.
+
+## Unchecked playback experiment
+
+The receiving page has an opt-in, default-off checkbox for palettes of 8+ colors.
+It bypasses calibration-contrast rejection, protected-ID/CRC acceptance and
+validated packet framing, and emits best-guess audio from the sampled bits.
+It still attempts RS repair; if repair fails, it extracts the received systematic
+data. No cross-frame soft accumulation is attempted without a trusted ID.
+
+Audio uses the configured sample rate and fps, a local output clock, a clamped
+ADPCM step index, and checked memory/payload bounds. Corrupt metadata cannot
+select an arbitrary sample rate or write beyond the audio buffer. Source packet
+IDs and CRCs are ignored. The UI clearly labels the output and counters as
+unchecked. Alignment and matching palette/grid settings remain necessary.
+This mode may produce noise and is not evidence of correct data recovery.

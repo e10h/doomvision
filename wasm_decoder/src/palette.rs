@@ -182,7 +182,7 @@ pub unsafe extern "C" fn palette_receive(
     out: *mut u8,
     metrics: *mut u32,
 ) -> i32 {
-    receive(state, rgba, iw, ih, x, y, w, h, out, metrics, 0., 0.)
+    receive(state, rgba, iw, ih, x, y, w, h, out, metrics, 0., 0.,false)
 }
 unsafe fn receive(
     state: *mut Palette,
@@ -197,6 +197,7 @@ unsafe fn receive(
     metrics: *mut u32,
     dx: f32,
     dy: f32,
+    unchecked:bool,
 ) -> i32 {
     if state.is_null() || rgba.is_null() || out.is_null() || metrics.is_null() {
         return -1;
@@ -243,7 +244,7 @@ unsafe fn receive(
                 variances[col][c] = (variances[col][c] / n - samples[col][c].powi(2)).max(0.);
             }
         }
-        if (0..3).any(|c| samples[7][c] - samples[0][c] < 35.) {
+        if !unchecked && (0..3).any(|c| samples[7][c] - samples[0][c] < 35.) {
             m[0] = 1;
             return 0;
         }
@@ -280,7 +281,7 @@ unsafe fn receive(
             let mut total = 0.;
             for k in 8..11 {
                 let value = (((samples[k][c] / 255.).powf(output_gamma[c]) - linear_refs[0][c])
-                    / (linear_refs[7][c] - linear_refs[0][c]))
+                    / (linear_refs[7][c] - linear_refs[0][c]).max(0.000001))
                     .clamp(0.001, 0.999);
                 total += value.ln() / (CAL[k][c] / 255.).ln();
             }
@@ -331,6 +332,7 @@ unsafe fn receive(
     }
     m[3] = (confidence / used.max(1) as f32 * 100.) as u32;
     let mut raw = hard(&llr);
+    if unchecked{crate::flex::unchecked_packet(&raw,p,std::slice::from_raw_parts_mut(out,p.packet));m[0]=7;m[1]=1;return 1;}
     let id = match soft_identity(&mut raw, &llr, p) {
         Ok(v) => v,
         Err(stage) => {
@@ -393,5 +395,7 @@ pub unsafe extern "C" fn palette_trial(
         llr: vec![0.; s.p.n * 8],
         captures: 0,
     };
-    receive(&mut trial, rgba, iw, ih, x, y, w, h, out, metrics, dx, dy)
+    receive(&mut trial, rgba, iw, ih, x, y, w, h, out, metrics, dx, dy,false)
 }
+
+#[no_mangle]pub unsafe extern "C" fn palette_receive_unchecked(state:*mut Palette,rgba:*const u8,iw:u32,ih:u32,x:u32,y:u32,w:u32,h:u32,out:*mut u8,metrics:*mut u32)->i32{receive(state,rgba,iw,ih,x,y,w,h,out,metrics,0.,0.,true)}
