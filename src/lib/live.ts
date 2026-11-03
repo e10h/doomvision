@@ -99,6 +99,17 @@ export class LiveCodec {
     this.stage=['Grid bounds invalid','Calibration colors blurred','Protected frame ID unreadable — check matching settings / try larger cells','Collecting same-frame captures; FEC / CRC not yet valid','Frame verified with Reed–Solomon + CRC','Combined captures verified with Reed–Solomon + CRC','Mixed frame IDs: capture rejected','UNCHECKED: best-guess audio, ID / CRC ignored'][metrics[0]]??'Decode failed';
     return ok===1?new Uint8Array(m.buffer,this.packet,this.profile?.packetBytes??LIVE_BYTES).slice():null;
   }
+  decodeTi84(data:ImageData,corners:number[]) {
+    if(corners.length!==8||corners.some(n=>!Number.isFinite(n)))throw new Error('Choose four grid corners');
+    this.upload(data);
+    if(!this.quad){const alloc=this.w.wasm_alloc as (n:number)=>number;this.quad=alloc(32);this.rectified=alloc(this.rectWidth*this.rectHeight*4);this.candidates=alloc(256);}
+    const m=this.w.memory as WebAssembly.Memory;
+    new Float32Array(m.buffer,this.quad,8).set(corners);this.corners=corners.slice();this.markers=0;
+    const warped=(this.w.rectify_ti84_grid as (...p:number[])=>number)(this.image,data.width,data.height,this.quad,this.rectified,this.rectWidth,this.rectHeight);
+    if(warped!==1){this.stage='Selected grid is outside camera view';return null;}
+    const packet=this.receive(this.rectified,this.rectWidth,this.rectHeight,{x:0,y:0,w:this.rectWidth,h:this.rectHeight});
+    this.stage='Manual four-corner alignment → '+this.stage;return packet;
+  }
   autoDecode(data:ImageData,layout:'browser'|'ti84'='browser') {
     this.captures=0;this.corrected=0;this.confidence=0;this.fused=false;
     this.upload(data);
