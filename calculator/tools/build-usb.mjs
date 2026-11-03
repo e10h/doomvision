@@ -1,0 +1,7 @@
+import{readFileSync,writeFileSync,copyFileSync,mkdirSync,rmSync}from'node:fs';import{execFileSync}from'node:child_process';import{fileURLToPath}from'node:url';
+const root=fileURLToPath(new URL('../',import.meta.url)),out=root+'usb-build/';mkdirSync(out+'src/',{recursive:true});
+execFileSync('python3',[root+'tools/encode_adpcm16k.py'],{stdio:'inherit'});
+for(const name of ['piano.h','piano-keymap.h'])copyFileSync(root+'src/'+name,out+'src/'+name);
+copyFileSync(root+'usb/src/main.c',out+'src/main.c');copyFileSync(root+'usb/src/wire.h',out+'src/wire.h');writeFileSync(out+'src/fast.S','#define PIANO_SAMPLES 128\n'+readFileSync(root+'src/fast.S','utf8'));
+writeFileSync(out+'makefile',readFileSync(root+'makefile','utf8').replace('NAME = DVSUN32','NAME = DVUSB4').replace(/DESCRIPTION = .*/, 'DESCRIPTION = "Doomvision USB PCM audio"'));
+rmSync(out+'obj',{recursive:true,force:true});rmSync(out+'bin',{recursive:true,force:true});execFileSync('make',['-C',out],{stdio:'inherit'});const bytes=readFileSync(out+'bin/DVUSB4.8xp');if(bytes.length<1000)throw Error('USB build split into extra files');const elf=readFileSync(out+'bin/DVUSB4.obj');const config=Buffer.from([9,2,25,0,1,1,0,128,50,9,4,0,0,1,255,68,1,0,7,5,129,2,64,0,0]);if(elf.indexOf(config)<0||elf.indexOf(Buffer.from('Doomvision PCM4','utf16le'))<0)throw Error('USB wire descriptor regression');copyFileSync(out+'bin/DVUSB4.8xp',root+'../public/downloads/DVUSB4.8xp');

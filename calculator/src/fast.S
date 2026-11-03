@@ -1,3 +1,6 @@
+#ifndef PIANO_SAMPLES
+#define PIANO_SAMPLES 1000
+#endif
 /* eZ80 ADL kernels. IX/IY preserved; other registers are scratch.
  * Executed from program RAM. Fixed-size loops match the 96x29 six-color grid. */
 .assume ADL=1
@@ -75,7 +78,7 @@ _dv_mix1000:
  ld de,0
  ld e,(ix+13)
  ld ix,(ix+6)
- ld a,125
+ ld a,PIANO_SAMPLES/8
  ld (.Lmixcount+1),a
 .Lmix:
  .rept 8
@@ -101,7 +104,7 @@ _dv_mix1000:
  add hl,de
  .endr
 .Lmixcount:
- ld a,125
+ ld a,PIANO_SAMPLES/8
  dec a
  ld (.Lmixcount+1),a
  jp nz,.Lmix
@@ -1182,7 +1185,7 @@ _dv_scale:
  sub b
  ld (.Lscale_jump+1),a
  ld ix,(ix+6)
- ld bc,1000
+ ld bc,PIANO_SAMPLES
 .Lscale:
  ld l,(ix+0)
  ld h,(ix+1)
