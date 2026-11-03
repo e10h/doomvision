@@ -19,6 +19,7 @@ export default function UsbReceiver() {
   const [status,setStatus]=useState("Ready to connect");
   const [connected,setConnected]=useState(false), [busy,setBusy]=useState(false);
   const [error,setError]=useState("");
+  const [deviceName,setDeviceName]=useState("");
   const [stats,setStats]=useState({chunks:0,rate:16000,mode:"Piano",queued:0,underruns:0,dropped:0,pps:0,missing:0});
   const canvas=useRef<HTMLCanvasElement>(null), session=useRef<Session|null>(null);
   function cleanup(s: Session) {
@@ -32,7 +33,7 @@ export default function UsbReceiver() {
   async function connect() {
     const usb=(navigator as Navigator & {usb?:Usb}).usb;
     if(!usb){setError("Open this page in Chrome or Edge on your Mac. USB access needs localhost or HTTPS.");return;}
-    setError("");setBusy(true);setStatus("Select your calculator");
+    setError("");setDeviceName("");setBusy(true);setStatus("Select your calculator");
     setStats({chunks:0,rate:16000,mode:"Piano",queued:0,underruns:0,dropped:0,pps:0,missing:0});
     const context=new AudioContext();
     const s: Session={active:true,context};session.current=s;
@@ -41,9 +42,10 @@ export default function UsbReceiver() {
     try {
       const chosen=usb.requestDevice({filters:[{vendorId:0x0451,productId:0xe008}]});
       await resume;
-      const device=await chosen;s.device=device;
+      const device=await chosen;s.device=device;setDeviceName(device.productName??"Calculator");
       if(!s.active){cleanup(s);return;}
-      if(!/^(Doomvision PCM[56]|TI-Boy CE PCM[123])$/.test(device.productName??""))throw Error("Run DVUSB6 or TI-Boy USB, reconnect the cable, then select its PCM audio device.");
+      if(/^TI-Boy CE PCM[123]$/.test(device.productName??""))throw Error(`The calculator is still running ${device.productName}. Transfer TIBUSB4 and TBUSB004, exit the old program, then run TIBUSB4 and reconnect its cable.`);
+      if(!/^(Doomvision PCM[56]|TI-Boy CE PCM4)$/.test(device.productName??""))throw Error("Run DVUSB6 or TIBUSB4, reconnect the cable, then select its PCM audio device.");
       setStatus("Opening calculator…");
       await device.open();
       if(!device.configuration)await device.selectConfiguration(1);
@@ -76,7 +78,7 @@ export default function UsbReceiver() {
         }
       }
     } catch(e) {
-      if(s.active){const message=e instanceof Error?e.message:String(e);setError(e instanceof DOMException&&e.name==='NotFoundError'?"No device selected. Click Connect calculator to try again.":`${message} Close the native Doomvision receiver and TI Connect CE if the device is busy.`);setStatus("Not connected");setConnected(false);setBusy(false);}
+      if(s.active){const message=e instanceof Error?e.message:String(e);setError(e instanceof DOMException&&e.name==='NotFoundError'?"No device selected. Click Connect calculator to try again.":message);setStatus("Not connected");setConnected(false);setBusy(false);}
     } finally {cleanup(s);}
   }
   return <main className={styles.page}>
@@ -85,12 +87,12 @@ export default function UsbReceiver() {
     <section className={styles.panel}>
       <div className={styles.toolbar}><span role="status"><i className={connected?styles.live:styles.dot}/>{status}</span><button onClick={connected?disconnect:connect} disabled={busy}>{busy?"Connecting…":connected?"Disconnect":"Connect calculator"}</button></div>
       <canvas ref={canvas} className={styles.wave} aria-label="Live waveform of the calculator audio playing through your speakers"/>
-      <div className={styles.stats}><span>{connected?stats.mode:"Live waveform"}</span><span>{stats.rate/1000} kHz · mono</span><span>{stats.chunks.toLocaleString()} chunks · {stats.pps}/s</span><span>{stats.queued} ms buffered</span></div>
+      <div className={styles.stats}>{deviceName&&<span>{deviceName}</span>}<span>{connected?stats.mode:"Live waveform"}</span><span>{stats.rate/1000} kHz · mono</span><span>{stats.chunks.toLocaleString()} chunks · {stats.pps}/s</span><span>{stats.queued} ms buffered</span></div>
     </section>
     {error&&<p role="alert" className={styles.error}>{error}</p>}
-    <p className={styles.hint}>Choose <strong>Doomvision PCM6</strong> or <strong>TI-Boy CE PCM3</strong> in the device picker. Use Chrome or Edge on Mac.<br/>Close TI Connect CE and the native receiver first. DVUSB6: Y= switches piano / clip. TI-Boy: use the game’s controls.</p>
+    <p className={styles.hint}>Choose <strong>Doomvision PCM6</strong> or <strong>TI-Boy CE PCM4</strong> in the device picker. Use Chrome or Edge on Mac.<br/>Close TI Connect CE and the native receiver first. DVUSB6: Y= switches piano / clip. TI-Boy: use the game’s controls.</p>
     {connected&&<p className={styles.health}>{stats.underruns} audio underruns · {stats.dropped} dropped samples · {stats.missing} missing USB chunks</p>}
     <a className={styles.download} href="/downloads/DVUSB6.8xp">Download DVUSB6 ↗</a>{" · "}
-    <a className={styles.download} href="/downloads/tiboyce-usb-audio.zip">Download TI-Boy USB prototype ↗</a>
+    <a className={styles.download} href="/downloads/tiboyce-usb-audio-4.zip">Download TI-Boy USB prototype ↗</a>
   </main>;
 }
