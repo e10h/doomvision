@@ -33,3 +33,12 @@ for(let frame=0;frame<480000;frame+=128){
 assert.equal(game.underruns,0);assert.equal(game.dropped,0);
 assert.ok(lastOutput.every(v=>Math.abs(v)<.0001),'Game Boy DC was not filtered');
 console.log('Game Boy 16–70 ms burst buffering and output DC rejection passed.');
+assert.equal(new UsbPcmDecoder().feed(packet(90,4000))[0].rate,4000);
+const low=new Processor();
+const lowFeed=(n,rate=4000)=>low.port.onmessage({data:{rate,flags:4,pcm:new Float32Array(n).fill(.25)}});
+lowFeed(512);
+for(let i=0;i<3750;i++){if(i%12===0)lowFeed(128);low.process([],[[new Float32Array(128)]]);}
+assert.equal(low.underruns,0);assert.equal(low.dropped,0);
+low.port.onmessage({data:{reset:true}});assert.equal(low.primed,false);assert.equal(low.write-low.read,0);
+lowFeed(1024,8000);low.process([],[[new Float32Array(128)]]);assert.equal(low.rate,8000);assert.equal(low.primed,true);
+console.log('4 kHz steady playback and live quality reset/rate switching passed.');

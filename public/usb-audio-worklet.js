@@ -5,6 +5,7 @@ class UsbAudio extends AudioWorkletProcessor {
     this.gameBoy=false;this.filterX=0;this.filterY=0;this.dcCoefficient=Math.exp(-2*Math.PI*5/sampleRate);
     this.rate=16000; this.phase=0; this.primed=false; this.underruns=0; this.dropped=0; this.frames=0;
     this.port.onmessage=({data})=>{
+      if(data.reset){this.read=this.write=0;this.phase=0;this.primed=false;this.filterX=this.filterY=0;this.underruns=this.dropped=0;return;}
       const gameBoy=!!(data.flags&4);
       if(gameBoy!==this.gameBoy){this.filterX=this.filterY=0;this.gameBoy=gameBoy;}
       if(data.rate!==this.rate) { this.read=this.write=0; this.phase=0; this.primed=false; this.rate=data.rate; }
@@ -31,7 +32,7 @@ class UsbAudio extends AudioWorkletProcessor {
       for(const channel of out)channel[i]=value;
     }
     this.frames+=out[0].length;
-    if(this.frames>=sampleRate/4){this.frames=0;this.port.postMessage({queued:Math.round((this.write-this.read)*1000/this.rate),underruns:this.underruns,dropped:this.dropped});}
+    if(this.frames>=sampleRate/4){this.frames=0;this.port.postMessage({playing:this.primed,queued:Math.round((this.write-this.read)*1000/this.rate),underruns:this.underruns,dropped:this.dropped});}
     return true;
   }
 }
