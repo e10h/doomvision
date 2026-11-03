@@ -22,7 +22,7 @@ export default function UsbReceiver() {
   const [error,setError]=useState("");
   const [deviceName,setDeviceName]=useState("");
   const [quality,setQuality]=useState(4000),[qualityBusy,setQualityBusy]=useState(false);
-  const [stats,setStats]=useState({chunks:0,rate:16000,mode:"Piano",queued:0,underruns:0,dropped:0,pps:0,missing:0});
+  const [stats,setStats]=useState({chunks:0,rate:quality,mode:"Piano",queued:0,underruns:0,dropped:0,pps:0,missing:0});
   const canvas=useRef<HTMLCanvasElement>(null), session=useRef<Session|null>(null);
   function cleanup(s: Session) {
     s.active=false; if(s.animation)cancelAnimationFrame(s.animation);
@@ -36,7 +36,7 @@ export default function UsbReceiver() {
     const usb=(navigator as Navigator & {usb?:Usb}).usb;
     if(!usb){setError("Open this page in Chrome or Edge on your Mac. USB access needs localhost or HTTPS.");return;}
     setError("");setDeviceName("");setBusy(true);setStatus("Select your calculator");
-    setStats({chunks:0,rate:16000,mode:"Piano",queued:0,underruns:0,dropped:0,pps:0,missing:0});
+    setStats({chunks:0,rate:quality,mode:"Piano",queued:0,underruns:0,dropped:0,pps:0,missing:0});
     const context=new AudioContext();
     const s: Session={active:true,context,warmUntil:0,playbackStarted:false};session.current=s;
     // Both calls originate in the button gesture: audio unlock and USB picker.
@@ -92,7 +92,7 @@ export default function UsbReceiver() {
   }
   async function changeQuality(rate:number){
     const previous=quality;setQuality(rate);const s=session.current;
-    if(!s?.active||s.device?.productName!=="TI-Boy CE PCM6")return;
+    if(!s?.active||s.device?.productName!=="TI-Boy CE PCM6"){setStats(prev=>({...prev,rate,chunks:0,pps:0}));return;}
     setQualityBusy(true);setError("");s.expectedRate=rate;s.warmUntil=performance.now()+500;s.playbackStarted=false;
     s.node?.port.postMessage({reset:true});setStatus("Changing audio quality…");
     try{await requestQuality(s.device,rate);}catch(e){s.expectedRate=previous;s.warmUntil=0;setQuality(previous);setError(e instanceof Error?e.message:String(e));}
