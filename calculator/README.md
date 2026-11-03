@@ -7,8 +7,8 @@ Full supplied “I'll Follow the Sun” recording, 108.85 seconds. Actual audio 
 Download `public/downloads/DVSUN8.8xp` and run `DVSUN8`. One calculator file contains the first **8 seconds of Never Gonna Give You Up** and an **8-second recorded piano sample**. Use the dedicated **`/ti84`** iPhone reader: 32 kbps, 8 fps, 96 × 29, six colors. The standard CE C libraries and a compatible native launcher remain required.
 
 - **2nd**: play/pause Rick; **Enter**: restart Rick; **Clear**: exit from clip mode.
-- **MODE**: toggle sampled piano / Rick. A tiny `P` marks piano mode.
-- In piano mode all **48 scanable note keys** trigger pitched recordings, spanning C3–B6; up to eight sampled voices ring together. MODE is reserved; the hardware ON key is outside the scanned matrix. CLEAR and 2nd are note keys in piano mode. Press MODE, then Clear to exit.
+- **Y=**: toggle sampled piano / Rick. A tiny `P` marks piano mode.
+- Piano layout spans C4–E5 with eight-voice sampled playback. White keys: WINDOW=C4, MODE=D4, X,T,θ,n=E4, APPS=F4, SIN=G4, comma=A4, 7=B4, 4=C5, 1=D5, 0=E5. Black keys: ZOOM=C♯4, DEL=D♯4, PRGM=F♯4, COS=G♯4, (=A♯4, 5=C♯5, 2=D♯5. STAT, 8 and decimal remain silent, preserving the E–F and B–C gaps. Y= is reserved for switching. Press Y=, then Clear to exit.
 
 The calculator resamples and mixes the recording, creates 1,000 PCM samples per audio frame, and encodes actual IMA ADPCM audio locally. Both modes use the ordinary DVA5 audio packets, Reed–Solomon protection and CRC. **No key-state commands or browser synthesizer are used.** The reader plays the decoded audio with a 125 ms minimum buffer. The panel and measured FPS counter remain unchanged. The sampled mix, ADPCM encoder, Reed–Solomon loop, base-six conversion and grid renderer use eZ80 assembly kernels and lookup tables. Measured isolated CPU frame work at 48 MHz is **87.7 ms for one voice / 109.5 ms for eight voices**, below the 125 ms budget for 8 fps. Keyboard/UI, LCD DMA, OS and camera overhead are excluded; actual FPS and interactive latency still require a physical-device test.
 

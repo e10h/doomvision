@@ -45,7 +45,8 @@ export default function Ti84Reader(){
  return <main style={{maxWidth:900,margin:'auto',padding:16}}>
  <Link href="/optical" style={{color:'#00d8ff'}}>← Optical audio</Link><h1 style={{fontSize:26,margin:'16px 0'}}>TI-84 Plus CE reader</h1>
  <p>32 kbps · 6 colors · 96 × 29 · 8 fps</p>
- <p>DVSUN8: 2nd plays the 8-second Rick Astley clip. MODE switches to sampled piano; calculator keys play notes. The barcode carries actual audio in both modes.</p>
+ <p>DVSUN8: 2nd plays the 8-second Rick Astley clip. Y= switches to sampled piano; calculator keys play notes. The barcode carries actual audio in both modes.</p>
+ <details><summary>Piano keys · C4–E5</summary><p>White: WINDOW C · MODE D · X,T,θ,n E · APPS F · SIN G · comma A · 7 B · 4 C · 1 D · 0 E.</p><p>Black: ZOOM C♯ · DEL D♯ · PRGM F♯ · COS G♯ · ( A♯ · 5 C♯ · 2 D♯. STAT, 8 and decimal stay silent. Y= switches modes.</p></details>
  <div style={{display:'flex',flexWrap:'wrap',gap:10,margin:'16px 0'}}>
  <button className="custom-btn active" disabled={!ready||opening} onClick={running?stop:start}>{opening?'Opening camera…':running?'Stop':'Start camera + sound'}</button>
  <button className="custom-btn" disabled={!ready} onClick={async()=>{try{await player.current?.enable();player.current?.testTone();}catch(e){setError(String(e));}}}>Test sound</button>

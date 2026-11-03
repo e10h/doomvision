@@ -7,7 +7,7 @@ p=argparse.ArgumentParser(description=__doc__);p.add_argument('--cemu',type=Path
 core=args.cemu.resolve()/'core';build=root/'bench-build';src=build/'src';src.mkdir(parents=True,exist_ok=True);(build/'tools').mkdir(exist_ok=True)
 def run(cmd,**kw):return subprocess.run([str(x) for x in cmd],check=True,**kw)
 for name in ['embedded.c','media.h','song.h']:shutil.copyfile(root/'clip-build/src'/name,src/name)
-for name in ['render.h','audio-encoder.h','piano.h','base6-table.h','fast.S']:shutil.copyfile(root/'src'/name,src/name)
+for name in ['render.h','audio-encoder.h','piano.h','piano-keymap.h','base6-table.h','fast.S']:shutil.copyfile(root/'src'/name,src/name)
 shutil.copyfile(root/'tools/bench-main.c',src/'main.c');shutil.copyfile(root/'makefile',build/'makefile')
 run(['make','-C',core,'-j4','CC=clang','CFLAGS=-O3 -std=gnu11 -fPIC'],stdout=subprocess.DEVNULL)
 run(['make','-C',build,'clean'],stdout=subprocess.DEVNULL);run(['make','-C',build],stdout=subprocess.DEVNULL)

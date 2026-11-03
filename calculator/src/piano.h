@@ -1,7 +1,7 @@
 #ifndef PIANO_H
 #define PIANO_H
 static int16_t pcm[1000];
-static const uint8_t key_masks[7]={0xbf,0xfe,0xff,0xff,0x7f,0x7f,0x0f};
+#include "piano-keymap.h"
 typedef struct {unsigned int phase,rate;uint8_t active;} Voice;
 static Voice voices[8];static uint8_t next_voice;
 static void note_on(uint8_t note){Voice*v=&voices[next_voice];v->phase=0;v->rate=note_rates[note];v->active=1;next_voice=(next_voice+1)&7;}
