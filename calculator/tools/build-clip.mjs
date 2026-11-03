@@ -1,0 +1,15 @@
+import{readFileSync,writeFileSync,mkdirSync,copyFileSync}from'node:fs';
+import{execFileSync}from'node:child_process';
+import{fileURLToPath}from'node:url';
+const root=fileURLToPath(new URL('../',import.meta.url)),out=root+'clip-build/';mkdirSync(out+'src/',{recursive:true});
+execFileSync('ffmpeg',['-y','-v','error','-i',root+'../public/samples/ill-follow-the-sun.mp3','-t','8','-f','s16le','-ac','1','-ar','8000',out+'clip.pcm']);
+execFileSync(process.execPath,[root+'tools/build-song.mjs',out+'clip.pcm'],{env:{...process.env,CE_OUTPUT:out},stdio:'inherit'});
+copyFileSync(root+'src/render.h',out+'src/render.h');
+const frames=readFileSync(out+'assets/song-frames.bin');
+writeFileSync(out+'src/embedded.c',`#include <stdint.h>\nconst uint8_t embedded_frames[${frames.length}]={${[...frames].join(',')}};\n`);
+let main=readFileSync(root+'src/main.c','utf8').replace('#include <fileioc.h>','').replace('#include "render.h"','#include "render.h"\nextern const uint8_t embedded_frames[];');
+main=main.replace('const uint8_t *banks[SONG_BANKS];','').replace(/ for\(i=0;i<SONG_BANKS;i\+\+\).*?\n/,'').replace('banks[frame/SONG_BANK_FRAMES]+(frame%SONG_BANK_FRAMES)*SONG_FRAME_BYTES','embedded_frames+frame*SONG_FRAME_BYTES').replace(' / 109 seconds',' / 8 seconds');
+writeFileSync(out+'src/main.c',main);writeFileSync(out+'makefile',readFileSync(root+'makefile','utf8').replace('NAME = DVSUN32','NAME = DVSUN8').replace('optical song','8-second optical clip'));
+execFileSync('make',['-C',out],{stdio:'inherit'});
+copyFileSync(out+'bin/DVSUN8.8xp',root+'../public/downloads/DVSUN8.8xp');
+console.log('Single-file clip ready: public/downloads/DVSUN8.8xp');

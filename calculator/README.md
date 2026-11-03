@@ -2,7 +2,11 @@
 
 Full supplied “I'll Follow the Sun” recording, 108.85 seconds. Actual audio bytes travel through the optical grid: mono 8 kHz IMA ADPCM, 4 bits/sample = 32 kbps, plus packet headers and Reed–Solomon protection. It loops automatically.
 
-## Transfer and play
+## Single-file 8-second clip
+
+Download `public/downloads/DVSUN8.8xp` and run `DVSUN8`. This embeds the first 8 seconds at the same 32 kbps settings and needs no song AppVars. The standard CE C libraries and a compatible native launcher are still required. Press 2nd to play/pause; Enter restarts; Clear exits. It loops every 8 seconds. Rebuild with `node tools/build-clip.mjs`; verify with `CE_OUTPUT=clip-build node tools/verify.mjs` after compiling the host renderer below.
+
+## Full-song transfer and play
 
 1. Extract `doomvision-ce32.zip`. Transfer **DVSUN32.8xp and all 12 DVS32xx.8xv files** with TI Connect CE. Keep all data AppVars in **Archive** (about 694 KB total).
 2. Run `DVSUN32` using your existing CE native-program launcher. This is a CE C program; it requires the standard CE C libraries (graphx, fileioc, keypadc) and a launcher compatible with your calculator OS. A `.tns` file is for a different calculator family.

@@ -1,5 +1,6 @@
+import{pathToFileURL}from'node:url';import{resolve}from'node:path';
 import{readFileSync,writeFileSync,mkdirSync}from'node:fs';import{createHash}from'node:crypto';import ts from'../../node_modules/typescript/lib/typescript.js';
-const root=new URL('../',import.meta.url); // calculator/
+const root=process.env.CE_OUTPUT?pathToFileURL(resolve(process.env.CE_OUTPUT)+'/'):new URL('../',import.meta.url); // calculator/
 const receiver=new URL('../../',import.meta.url);
 async function module(path){const code=ts.transpileModule(readFileSync(new URL(path,receiver),'utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ES2022}}).outputText;return import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);}
 const{LiveCodec}=await module('src/lib/live.ts'),{profile,autoFit,frameSamples}=await module('src/lib/profile.ts'),{paletteRgb}=await module('src/lib/palette.ts');
