@@ -68,7 +68,7 @@ fn find(context: &rusb::Context, list: bool) -> Result<Option<rusb::Device<rusb:
                 if ours {
                     "Doomvision PCM sender"
                 } else {
-                    "TI device; run DVUSB5 to stream"
+                    "TI device; run DVUSB6 to stream"
                 }
             );
         }
@@ -77,7 +77,7 @@ fn find(context: &rusb::Context, list: bool) -> Result<Option<rusb::Device<rusb:
             // after the calculator exits to TI file-transfer mode.
             if let Ok(h) = dev.open() {
                 if let Ok(product) = h.read_product_string_ascii(&d) {
-                    if product == "Doomvision PCM5" {
+                    if product == "Doomvision PCM5" || product == "Doomvision PCM6" {
                         found = Some(dev);
                     }
                 }
@@ -133,13 +133,13 @@ fn main() -> Result<()> {
     if args.len() > 1 {
         bail!("Usage: doomvision-usb [--list | --self-test | --replay FILE]");
     }
-    eprintln!("Connect calculator, run DVUSB5 (starts in piano mode). Waiting for DVUSB5; older builds are not claimed…");
+    eprintln!("Connect calculator, run DVUSB6 (starts in piano mode). Waiting for DVUSB5/6; older builds are not claimed…");
     while running.load(Ordering::Relaxed) {
         let Some(device) = find(&context, false)? else {
             thread::sleep(Duration::from_millis(300));
             continue;
         };
-        eprintln!("DVUSB5 found; opening bulk audio interface…");
+        eprintln!("Compatible USB audio sender found; opening bulk audio interface…");
         let handle = match device.open() {
             Ok(h) => h,
             Err(e) => {

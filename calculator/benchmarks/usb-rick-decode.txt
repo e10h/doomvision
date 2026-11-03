@@ -1,0 +1,2 @@
+Native Rick decode: mean 2.294 ms / max 2.351 ms per 128 samples at 48MHz
+Full clip and loop boundary PCM parity passed.

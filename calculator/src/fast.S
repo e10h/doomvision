@@ -460,6 +460,7 @@ _dv_adpcm:
 .section .rodata.dv_ima,"a",@progbits
 .Lima_steps:
 .short 7,8,9,10,11,12,13,14,16,17,19,21,23,25,28,31,34,37,41,45,50,55,60,66,73,80,88,97,107,118,130,143,157,173,190,209,230,253,279,307,337,371,408,449,494,544,598,658,724,796,876,963,1060,1166,1282,1411,1552,1707,1878,2066,2272,2499,2749,3024,3327,3660,4026,4428,4871,5358,5894,6484,7132,7845,8630,9493,10442,11487,12635,13899,15289,16818,18500,20350,22385,24623,27086,29794,32767
+.section .rodata.dv_ima_records,"a",@progbits
 .Lima_records:
 .byte 0,0,0
 .byte 1,0,0
@@ -1213,3 +1214,168 @@ _dv_scale:
  jr nz,.Lscale
  pop ix
  ret
+
+.section .text._dv_decode,"ax",@progbits
+.global _dv_decode
+/* Decode an even number of IMA samples; state = predictor LE16 + index. */
+_dv_decode:
+ push ix
+ push iy
+ ld ix,0
+ add ix,sp
+ ld iy,(ix+9)
+ ld de,(ix+12)
+ push de
+ ld hl,(ix+15)
+ ld (.Ldec_countval),hl
+ ld hl,(ix+18)
+ ld (.Ldec_stateval),hl
+ ld de,0
+ ld e,(hl)
+ inc hl
+ ld d,(hl)
+ inc hl
+ ld a,(hl)
+ ld (.Ldec_indexval),a
+ ex de,hl
+ bit 7,h
+ jr z,.Ldec_initpos
+ ld de,0xff0000
+ add hl,de
+.Ldec_initpos:
+ ld (.Ldec_predval),hl
+ pop ix
+ xor a,a
+ ld (.Ldec_phaseval),a
+.Ldec_sample:
+ ld a,(.Ldec_phaseval)
+ xor 1
+ ld (.Ldec_phaseval),a
+ jr z,.Ldec_high
+ ld a,(iy+0)
+ and 15
+ jr .Ldec_code
+.Ldec_high:
+ ld a,(iy+0)
+ inc iy
+ rrca
+ rrca
+ rrca
+ rrca
+ and 15
+.Ldec_code:
+ ld b,a
+ ld hl,0
+ ld a,(.Ldec_indexval)
+ ld l,a
+ add hl,hl
+ ld de,.Lima_steps
+ add hl,de
+ ld de,0
+ ld e,(hl)
+ inc hl
+ ld d,(hl)
+ ld hl,0
+ bit 2,b
+ jr z,.Ldec_d2
+ add hl,de
+.Ldec_d2:
+ srl d
+ rr e
+ bit 1,b
+ jr z,.Ldec_d1
+ add hl,de
+.Ldec_d1:
+ srl d
+ rr e
+ bit 0,b
+ jr z,.Ldec_d0
+ add hl,de
+.Ldec_d0:
+ srl d
+ rr e
+ add hl,de
+ push hl
+ ld a,b
+ and 7
+ ld hl,.Ldec_adjust
+ ld de,0
+ ld e,a
+ add hl,de
+ ld c,(hl)
+ ld a,(.Ldec_indexval)
+ add a,c
+ cp 89
+ jr c,.Ldec_idxok
+ bit 7,a
+ jr z,.Ldec_idxhi
+ xor a,a
+ jr .Ldec_idxok
+.Ldec_idxhi:
+ ld a,88
+.Ldec_idxok:
+ ld (.Ldec_indexval),a
+ pop de
+ ld hl,(.Ldec_predval)
+ bit 3,b
+ jr nz,.Ldec_pred_neg
+ add hl,de
+ jr .Ldec_clamp
+.Ldec_pred_neg:
+ or a,a
+ sbc hl,de
+.Ldec_clamp:
+ push hl
+ ld de,32767
+ or a,a
+ sbc hl,de
+ jp p,.Ldec_clamp_hi
+ pop hl
+ push hl
+ ld de,-32768
+ or a,a
+ sbc hl,de
+ jp m,.Ldec_clamp_lo
+ pop hl
+ jr .Ldec_storepred
+.Ldec_clamp_hi:
+ pop hl
+ ld hl,32767
+ jr .Ldec_storepred
+.Ldec_clamp_lo:
+ pop hl
+ ld hl,-32768
+.Ldec_storepred:
+ ld (.Ldec_predval),hl
+
+ ld (ix+0),l
+ ld (ix+1),h
+ inc ix
+ inc ix
+ ld hl,(.Ldec_countval)
+ dec hl
+ ld (.Ldec_countval),hl
+ ld a,h
+ or l
+ jp nz,.Ldec_sample
+ ld hl,(.Ldec_predval)
+ ld de,(.Ldec_stateval)
+ ld a,l
+ ld (de),a
+ inc de
+ ld a,h
+ ld (de),a
+ inc de
+ ld a,(.Ldec_indexval)
+ ld (de),a
+ pop iy
+ pop ix
+ ret
+.Ldec_predval: .byte 0,0,0
+.Ldec_indexval: .byte 32
+.Ldec_countval: .byte 0,0,0
+.Ldec_stateval: .byte 0,0,0
+.Ldec_phaseval: .byte 0
+
+.section .rodata.dv_decode_adjust,"a",@progbits
+.Ldec_adjust: .byte 255,255,255,255,2,4,6,8
