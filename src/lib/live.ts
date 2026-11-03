@@ -99,14 +99,22 @@ export class LiveCodec {
     this.stage=['Grid bounds invalid','Calibration colors blurred','Protected frame ID unreadable — check matching settings / try larger cells','Collecting same-frame captures; FEC / CRC not yet valid','Frame verified with Reed–Solomon + CRC','Combined captures verified with Reed–Solomon + CRC','Mixed frame IDs: capture rejected','UNCHECKED: best-guess audio, ID / CRC ignored'][metrics[0]]??'Decode failed';
     return ok===1?new Uint8Array(m.buffer,this.packet,this.profile?.packetBytes??LIVE_BYTES).slice():null;
   }
-  autoDecode(data:ImageData) {
+  autoDecode(data:ImageData,layout:'browser'|'ti84'='browser') {
     this.captures=0;this.corrected=0;this.confidence=0;this.fused=false;
     this.upload(data);
     if(!this.quad) {
       const alloc=this.w.wasm_alloc as (n:number)=>number;
       this.quad=alloc(32);this.rectified=alloc(this.rectWidth*this.rectHeight*4);this.candidates=alloc(256);
     }
-    const found=(this.w.locate_robust_grid as (...p:number[])=>number)(this.image,data.width,data.height,this.quad);
+    // CE finders stay fixed while the dense data changes. Keep a CRC-verified
+    // perspective lock instead of re-ranking data patterns as finders each scan.
+    if(layout==='ti84'&&this.corners.length===8){
+      const m=this.w.memory as WebAssembly.Memory;
+      new Float32Array(m.buffer,this.quad,8).set(this.corners);
+      const warped=(this.w[layout==='ti84'?'rectify_ti84_grid':'rectify_flex_grid'] as (...p:number[])=>number)(this.image,data.width,data.height,this.quad,this.rectified,this.rectWidth,this.rectHeight);
+      if(warped===1){const packet=this.receive(this.rectified,this.rectWidth,this.rectHeight,{x:0,y:0,w:this.rectWidth,h:this.rectHeight});if(packet){this.markers=4;this.stage='TI-84 locked → '+this.stage;return packet;}}
+    }
+    const found=(this.w[layout==='ti84'?'locate_ti84_grid':'locate_robust_grid'] as (...p:number[])=>number)(this.image,data.width,data.height,this.quad);
     this.corners=[];
     this.markers=found===4?4:Math.max(0,found);
     if(found!==4) {
@@ -120,7 +128,7 @@ export class LiveCodec {
     for(let i=0;i<count;i++) {
       const corners=candidates.slice(i*8,i*8+8);
       new Float32Array(m.buffer,this.quad,8).set(corners);
-      const warped=(this.w.rectify_flex_grid as (...p:number[])=>number)(this.image,data.width,data.height,this.quad,this.rectified,this.rectWidth,this.rectHeight);
+      const warped=(this.w[layout==='ti84'?'rectify_ti84_grid':'rectify_flex_grid'] as (...p:number[])=>number)(this.image,data.width,data.height,this.quad,this.rectified,this.rectWidth,this.rectHeight);
       if(warped!==1)continue;
       const packet=this.receive(this.rectified,this.rectWidth,this.rectHeight,{x:0,y:0,w:this.rectWidth,h:this.rectHeight});
       const rank=packet?100:this.failureCode===6?40:this.failureCode===3?30:this.failureCode===2?10:0;

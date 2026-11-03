@@ -56,9 +56,9 @@ fn rgb(rgba:&[u8],w:usize,h:usize,p:Point)->Option<[f32;3]>{
 }
 #[no_mangle]
 pub unsafe extern "C" fn locate_live_grid(rgba:*const u8,width:u32,height:u32,out:*mut f32)->i32{
-    locate(rgba,width,height,out,&CENTERS,&DOTS,&GRID,false)
+    locate(rgba,width,height,out,&CENTERS,&DOTS,&GRID,false,4.)
 }
-unsafe fn locate(rgba:*const u8,width:u32,height:u32,out:*mut f32,centers:&[Point;4],dots:&[Point;4],grid:&[Point;4],fallback:bool)->i32{
+unsafe fn locate(rgba:*const u8,width:u32,height:u32,out:*mut f32,centers:&[Point;4],dots:&[Point;4],grid:&[Point;4],fallback:bool,module:f32)->i32{
     if fallback{ROBUST_COUNT=0;}
     if rgba.is_null()||out.is_null()||width<160||height<64{return -1;}
     let (w,h)=(width as usize,height as usize);let pixels=std::slice::from_raw_parts(rgba,w*h*4);
@@ -97,8 +97,8 @@ unsafe fn locate(rgba:*const u8,width:u32,height:u32,out:*mut f32,centers:&[Poin
             // requiring any color dot. Verified packet identity resolves orientation.
             let unit=chosen.iter().map(|f|f.scale).sum::<f32>()/4.;
             let lengths:Vec<f32>=(0..4).map(|i|(p[i].x-p[(i+1)%4].x).hypot(p[i].y-p[(i+1)%4].y)/unit).collect();
-            let long=(centers[1].x-centers[0].x).abs()/4.;
-            let short=(centers[3].y-centers[0].y).abs()/4.;
+            let long=(centers[1].x-centers[0].x).abs()/module;
+            let short=(centers[3].y-centers[0].y).abs()/module;
             for shift in 0..2 {
                 let score=(0..4).map(|i|(lengths[i]/if (i+shift)%2==0{long}else{short}).ln().abs()).sum::<f32>();
                 let support=chosen.iter().map(|f|f.hits as f32).sum::<f32>();
@@ -140,7 +140,7 @@ unsafe fn locate(rgba:*const u8,width:u32,height:u32,out:*mut f32,centers:&[Poin
             }}
             if let Some(q)=best {
                 let values:[f32;8]=std::array::from_fn(|i|if i%2==0{q[i/2].x}else{q[i/2].y});
-                if let Some(index)=(0..n).find(|&j|(0..8).map(|i|(ROBUST_CANDIDATES[j][i]-values[i]).abs()).sum::<f32>()<1.){let first=ROBUST_CANDIDATES[0];ROBUST_CANDIDATES[0]=ROBUST_CANDIDATES[index];ROBUST_CANDIDATES[index]=first;}
+                if let Some(index)=(0..n).find(|&j|(0..8).map(|i|(ROBUST_CANDIDATES[j][i]-values[i]).abs()).sum::<f32>()<1.){let first=ROBUST_CANDIDATES[0];ROBUST_CANDIDATES[0]=ROBUST_CANDIDATES[index];ROBUST_CANDIDATES[index]=first;}else{if n<8{ROBUST_CANDIDATES[n]=ROBUST_CANDIDATES[0];n+=1;}ROBUST_CANDIDATES[0]=values;}
             }
             ROBUST_COUNT=n;
             if n>0{std::ptr::copy_nonoverlapping(std::ptr::addr_of!(ROBUST_CANDIDATES) as *const f32,out,8);return 4;}
@@ -168,10 +168,38 @@ unsafe fn rectify(rgba:*const u8,width:u32,height:u32,quad:*const f32,out:*mut u
  let centers=[Point{x:16.,y:16.},Point{x:368.,y:16.},Point{x:368.,y:144.},Point{x:16.,y:144.}];
  let dots=[Point{x:16.,y:36.},Point{x:368.,y:36.},Point{x:368.,y:124.},Point{x:16.,y:124.}];
  let grid=[Point{x:32.,y:32.},Point{x:352.,y:32.},Point{x:352.,y:128.},Point{x:32.,y:128.}];
- locate(rgba,width,height,out,&centers,&dots,&grid,true)
+ locate(rgba,width,height,out,&centers,&dots,&grid,true,4.)
 }
 #[no_mangle]pub unsafe extern "C" fn rectify_robust_grid(rgba:*const u8,width:u32,height:u32,quad:*const f32,out:*mut u8)->i32{rectify(rgba,width,height,quad,out,640,192)}
 
 #[no_mangle]pub unsafe extern "C" fn rectify_flex_grid(rgba:*const u8,width:u32,height:u32,quad:*const f32,out:*mut u8,ow:u32,oh:u32)->i32{
  if ow<64||ow>2048||oh<32||oh>1024{return -1;}rectify(rgba,width,height,quad,out,ow as usize,oh as usize)
+}
+
+/// TI-84 CE LCD geometry: square finders, vertically expanded data grid.
+/// These are actual 320x240 renderer pixel boundaries, not browser coordinates.
+#[no_mangle]
+pub unsafe extern "C" fn locate_ti84_grid(rgba:*const u8,width:u32,height:u32,out:*mut f32)->i32 {
+ let centers=[Point{x:13.,y:14.},Point{x:307.,y:14.},Point{x:307.,y:224.},Point{x:13.,y:224.}];
+ let dots=[Point{x:13.,y:47.},Point{x:307.,y:47.},Point{x:307.,y:191.},Point{x:13.,y:191.}];
+ let grid=[Point{x:27.,y:40.},Point{x:293.,y:40.},Point{x:293.,y:198.},Point{x:27.,y:198.}];
+ locate(rgba,width,height,out,&centers,&dots,&grid,true,24./7.)
+}
+
+/// Sample CE cells at their actual rounded LCD centers. Expanding a 96-column
+/// grid by a uniform scale otherwise blends adjacent 2/3-pixel cells.
+#[no_mangle]
+pub unsafe extern "C" fn rectify_ti84_grid(rgba:*const u8,width:u32,height:u32,quad:*const f32,out:*mut u8,ow:u32,oh:u32)->i32 {
+ if rgba.is_null()||quad.is_null()||out.is_null()||width<2||height<2||ow<96||oh<29||ow>2048||oh>1024{return 0;}
+ let q=std::slice::from_raw_parts(quad,8);let dst=std::array::from_fn(|i|Point{x:q[2*i],y:q[2*i+1]});
+ let src=[Point{x:27.,y:40.},Point{x:293.,y:40.},Point{x:293.,y:198.},Point{x:27.,y:198.}];
+ let Some(m)=homography(&src,&dst)else{return 0;};let pixels=std::slice::from_raw_parts(rgba,width as usize*height as usize*4);let output=std::slice::from_raw_parts_mut(out,ow as usize*oh as usize*4);
+ let mut cells=[[0u8;3];96*29];
+ for row in 0..29{for col in 0..96 {
+ let x0=27+(col*266+48)/96;let x1=27+((col+1)*266+48)/96;
+ let y0=40+(row*158+14)/29;let y1=40+((row+1)*158+14)/29;
+ let mut p=map(&m,Point{x:(x0+x1) as f32/2.,y:(y0+y1) as f32/2.});p.x-=0.5;p.y-=0.5;
+ let Some(c)=rgb(pixels,width as usize,height as usize,p)else{return 0;};cells[row*96+col]=c.map(|v|v.round().clamp(0.,255.) as u8);
+ }}
+ for y in 0..oh as usize{for x in 0..ow as usize{let c=cells[(y*29/oh as usize)*96+x*96/ow as usize];let i=(y*ow as usize+x)*4;output[i..i+3].copy_from_slice(&c);output[i+3]=255;}}1
 }

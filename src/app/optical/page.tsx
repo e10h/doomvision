@@ -125,6 +125,7 @@ export default function LiveOptical() {
   const point=(e:React.PointerEvent<HTMLCanvasElement>)=>{const b=e.currentTarget.getBoundingClientRect(),c=e.currentTarget;return{x:Math.max(0,Math.min(c.width-1,(e.clientX-b.left)*c.width/b.width)),y:Math.max(0,Math.min(c.height-1,(e.clientY-b.top)*c.height/b.height))};};
   return <main style={{maxWidth:1100,margin:'0 auto',padding:20}}>
     <Link href="/" style={{color:'#00d8ff'}}>← Doom receiver</Link>
+    <p><Link href="/ti84" style={{color:'#00d8ff'}}>TI-84 Plus CE dedicated reader →</Link></p>
     <h1 style={{fontSize:28,fontWeight:800,marginTop:20}}>Live {plan.colors}-color audio</h1>
     <p>Each verified packet carries {(1000/settings.fps).toFixed(0)} milliseconds of audio. A short adaptive buffer smooths playback; no full-file wait.</p>
     <div style={{display:'flex',gap:12,flexWrap:'wrap',margin:'20px 0'}}>

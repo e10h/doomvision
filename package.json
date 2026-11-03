@@ -18,7 +18,8 @@
     "test:playout": "node scripts/test-playout.mjs",
     "test:flex": "node scripts/test-flex.mjs",
     "test:track": "node scripts/test-track.mjs",
-    "test:palettes": "node scripts/test-palettes.mjs"
+    "test:palettes": "node scripts/test-palettes.mjs",
+    "test:ti84": "node scripts/test-ti84.mjs"
   },
   "dependencies": {
     "next": "16.4.3",
