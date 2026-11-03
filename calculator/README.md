@@ -4,7 +4,7 @@ Full supplied “I'll Follow the Sun” recording, 108.85 seconds. Actual audio 
 
 ## Single-file 8-second clip
 
-Download `public/downloads/DVSUN8.8xp` and run `DVSUN8`. This embeds the first 8 seconds at the same 32 kbps settings and needs no song AppVars. The standard CE C libraries and a compatible native launcher are still required. Press 2nd to play/pause; Enter restarts; Clear exits. It loops every 8 seconds. Rebuild with `node tools/build-clip.mjs`; verify with `CE_OUTPUT=clip-build node tools/verify.mjs` after compiling the host renderer below.
+Download `public/downloads/DVSUN8.8xp` and run `DVSUN8`. This embeds the first 8 seconds at the same 32 kbps settings and needs no song AppVars. The standard CE C libraries and a compatible native launcher are still required. Press 2nd to play/pause; Enter restarts; Clear exits. It loops every 8 seconds. The panel fills the LCD; a small top-edge counter measures actual displayed frames per second over roughly one second (0.0 while paused). Alignment markers remain square and the grid is taller. Only the grid and FPS readout are redrawn during playback. Rebuild with `node tools/build-clip.mjs`; verify with `CE_OUTPUT=clip-build node tools/verify.mjs` after compiling the host renderer below.
 
 ## Full-song transfer and play
 
