@@ -23,7 +23,7 @@ int main(void){
  for(i=0;i<7;i++)previous[i]=kb_Data[i+1]&key_masks[i];
  }
  oldmode=mode;oldsecond=second;oldenter=enter;
- if(draw){audio_transport(frame_data);render(gfx_vbuffer[0],frame_data);now=clock();if(now-fps_start>=CLOCKS_PER_SEC){fps10=(shown*10UL*CLOCKS_PER_SEC)/(now-fps_start);shown=0;fps_start=now;}rect(gfx_vbuffer[0],0,0,205,8,23);gfx_SetTextFGColor(16);gfx_SetTextBGColor(23);if(synth)gfx_PrintStringXY("P",4,0);gfx_SetTextXY(128,0);gfx_PrintUInt(!synth&&paused?0:fps10/10,1);gfx_PrintString(".");gfx_PrintUInt(!synth&&paused?0:fps10%10,1);gfx_PrintString(" fps");gfx_SwapDraw();if(synth||!paused)shown++;last=frame;}
+ if(draw){audio_transport(frame_data);render(gfx_vbuffer[0],frame_data);now=clock();if(now-fps_start>=CLOCKS_PER_SEC){fps10=(shown*10UL*CLOCKS_PER_SEC)/(now-fps_start);shown=0;fps_start=now;}hud_clear(gfx_vbuffer[0]);gfx_SetTextFGColor(16);gfx_SetTextBGColor(23);if(synth)gfx_PrintStringXY("P",100,0);gfx_SetTextXY(128,0);gfx_PrintUInt(!synth&&paused?0:fps10/10,1);gfx_PrintString(".");gfx_PrintUInt(!synth&&paused?0:fps10%10,1);gfx_PrintString(" fps");gfx_SwapDraw();if(synth||!paused)shown++;last=frame;}
  }
  gfx_End();return 0;
 }

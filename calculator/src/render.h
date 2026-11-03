@@ -13,6 +13,8 @@ static uint8_t widths[SONG_COLS];
 static uint8_t triplets[256][3];
 #endif
 static void rect(uint8_t*v,int x,int y,int w,int h,uint8_t c){while(h--){memset(v+y*320+x,c,w);y++;}}
+/* Overlay stays between corner finders (x=1..24 and x=295..318). */
+static void hud_clear(uint8_t*v){rect(v,96,0,128,8,23);}
 /* Square finders retain their shape while their centers span the full LCD. */
 static void render_background(uint8_t*v){
  int i;const int xy[4][2]={{16,16},{368,16},{368,144},{16,144}},dy[4]={36,36,124,124};const uint8_t dots[4]={17,18,20,19};
