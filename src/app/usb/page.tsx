@@ -46,8 +46,8 @@ export default function UsbReceiver() {
       await resume;
       const device=await chosen;s.device=device;setDeviceName(device.productName??"Calculator");
       if(!s.active){cleanup(s);return;}
-      if(/^TI-Boy CE PCM[12345]$/.test(device.productName??""))throw Error(`The calculator is still running ${device.productName}. Transfer TIBUSB6 and TBUSB006, exit the old program, then run TIBUSB6 and reconnect its cable.`);
-      if(!/^(Doomvision PCM[56]|TI-Boy CE PCM6)$/.test(device.productName??""))throw Error("Run DVUSB6 or TIBUSB6, reconnect the cable, then select its PCM audio device.");
+      if(/^TI-Boy CE PCM[12345]$/.test(device.productName??""))throw Error(`The calculator is still running ${device.productName}. Transfer TIBUSB7 and TBUSB007, exit the old program, then run TIBUSB7 and reconnect its cable.`);
+      if(!/^(Doomvision PCM[56]|TI-Boy CE PCM[67])$/.test(device.productName??""))throw Error("Run DVUSB6 or TIBUSB7, reconnect the cable, then select its PCM audio device.");
       setStatus("Opening calculator…");
       await device.open();
       if(!device.configuration)await device.selectConfiguration(1);
@@ -57,7 +57,8 @@ export default function UsbReceiver() {
       try { await device.claimInterface(iface.interfaceNumber); }
       catch { throw Error("Calculator USB is busy. Quit TI Connect CE with ⌘Q, close other USB receiver tabs, then unplug and reconnect the cable while the game stays running."); }
       await device.selectAlternateInterface(iface.interfaceNumber,alternate.alternateSetting);
-      if(device.productName==='TI-Boy CE PCM6'){await requestQuality(device,quality);s.expectedRate=quality;}
+      if(device.productName==='TI-Boy CE PCM7'){await requestQuality(device,quality);s.expectedRate=quality;}
+      else if(device.productName==='TI-Boy CE PCM6'){setQuality(4000);s.expectedRate=4000;}
       await context.audioWorklet.addModule('/usb-audio-worklet.js');
       if(!s.active){cleanup(s);return;}
       const node=new AudioWorkletNode(context,'usb-audio',{numberOfInputs:0,numberOfOutputs:1,outputChannelCount:[1]});s.node=node;
@@ -91,9 +92,9 @@ export default function UsbReceiver() {
     if(result.status!=="ok")throw Error("The calculator could not change audio quality.");
   }
   async function changeQuality(rate:number){
-    if(rate!==4000){setError("This firmware currently supports the verified Fast 4 kHz setting.");return;}
+    if(rate!==4000&&session.current?.device?.productName!=="TI-Boy CE PCM7"){setError("Install TIBUSB7 to change audio quality live; PCM6 remains Fast-only.");return;}
     const previous=quality;setQuality(rate);const s=session.current;
-    if(!s?.active||s.device?.productName!=="TI-Boy CE PCM6"){setStats(prev=>({...prev,rate,chunks:0,pps:0}));return;}
+    if(!s?.active||s.device?.productName!=="TI-Boy CE PCM7"){setStats(prev=>({...prev,rate,chunks:0,pps:0}));return;}
     setQualityBusy(true);setError("");s.expectedRate=rate;s.warmUntil=performance.now()+500;s.playbackStarted=false;
     s.node?.port.postMessage({reset:true});setStatus("Changing audio quality…");
     try{await requestQuality(s.device,rate);}catch(e){s.expectedRate=previous;s.warmUntil=0;setQuality(previous);setError(e instanceof Error?e.message:String(e));}
@@ -104,14 +105,14 @@ export default function UsbReceiver() {
     <section className={styles.intro}><div className={styles.eyebrow}>CALCULATOR → SPEAKERS</div><h1>Hear your calculator.</h1><p>Run DVUSB6 or TI-Boy USB on your TI-84 Plus CE, plug it into your Mac, and connect.</p></section>
     <section className={styles.panel}>
       <div className={styles.toolbar}><span role="status"><i className={connected?styles.live:styles.dot}/>{status}</span><button onClick={connected?disconnect:connect} disabled={busy}>{busy?"Connecting…":connected?"Disconnect":"Connect calculator"}</button></div>
-      {(!connected||deviceName.startsWith("TI-Boy"))&&<label className={styles.quality}>Game Boy audio quality <select aria-label="Game Boy audio quality" value={quality} disabled={busy||qualityBusy} onChange={e=>void changeQuality(Number(e.target.value))}><option value={4000}>Fast · 4 kHz</option><option value={8000} disabled>Balanced · 8 kHz (not yet verified)</option><option value={16000} disabled>High · 16 kHz (not yet verified)</option></select><small>Lower rates leave more CPU time for gameplay.</small></label>}
+      {(!connected||deviceName.startsWith("TI-Boy"))&&<label className={styles.quality}>Game Boy audio quality <select aria-label="Game Boy audio quality" value={quality} disabled={busy||qualityBusy} onChange={e=>void changeQuality(Number(e.target.value))}><option value={4000}>Fast · 4 kHz</option><option value={8000} disabled={!connected||deviceName!=="TI-Boy CE PCM7"}>Balanced · 8 kHz</option><option value={16000} disabled={!connected||deviceName!=="TI-Boy CE PCM7"}>High · 16 kHz (slower game)</option></select><small>{!connected?"Connect PCM7 to unlock live quality changes.":deviceName==="TI-Boy CE PCM6"?"PCM6 is Fast-only. TIBUSB7 enables live quality changes.":"Lower rates leave more CPU time for gameplay."}</small></label>}
       <canvas ref={canvas} className={styles.wave} aria-label="Live waveform of the calculator audio playing through your speakers"/>
       <div className={styles.stats}>{deviceName&&<span>{deviceName}</span>}<span>{connected?stats.mode:"Live waveform"}</span><span>{stats.rate/1000} kHz · mono</span><span>{stats.chunks.toLocaleString()} chunks · {stats.pps}/s · target {Math.round(stats.rate/128)}/s</span><span>{stats.queued} ms buffered</span></div>
     </section>
     {error&&<p role="alert" className={styles.error}>{error}</p>}
-    <p className={styles.hint}>Choose <strong>Doomvision PCM6</strong> or <strong>TI-Boy CE PCM6</strong> in the device picker. Use Chrome or Edge on Mac.<br/>Close TI Connect CE and the native receiver first. DVUSB6: Y= switches piano / clip. TI-Boy: use the game’s controls.</p>
+    <p className={styles.hint}>Choose <strong>Doomvision PCM6</strong> or <strong>TI-Boy CE PCM7</strong> in the device picker. Use Chrome or Edge on Mac.<br/>Close TI Connect CE and the native receiver first. DVUSB6: Y= switches piano / clip. TI-Boy: use the game’s controls.</p>
     {(connected||stats.chunks>0)&&<p className={styles.health}>{stats.underruns} audio underruns · {stats.dropped} dropped samples · {stats.missing} missing USB chunks</p>}
     <a className={styles.download} href="/downloads/DVUSB6.8xp">Download DVUSB6 ↗</a>{" · "}
-    <a className={styles.download} href="/downloads/TBAUD6.8xg">Download TI-Boy USB prototype ↗</a>
+    <a className={styles.download} href="/downloads/TBAUD7.8xg">Download TI-Boy USB prototype ↗</a>
   </main>;
 }
