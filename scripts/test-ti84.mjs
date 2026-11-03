@@ -1,3 +1,4 @@
+import{inflateSync}from'node:zlib';import{createHash}from'node:crypto';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import ts from 'typescript';
@@ -22,3 +23,10 @@ for(const [name,dst]of [['scaled',[[120,40],[760,40],[760,520],[120,520]]],['per
 const blind={...frame,data:frame.data.slice()};for(let y=0;y<240;y++)for(let x=0;x<320;x++)if(y<40||y>=198||x<27||x>=293)blind.data.set([255,255,255,255],(y*320+x)*4);
 const manual=await LiveCodec.create(p);assert.equal(manual.autoDecode(blind,'ti84'),null,'no finder lock when markers are removed');const picked=manual.decodeTi84(blind,[27,40,293,40,293,198,27,198]);assert(picked,manual.stage);assert.deepEqual(Buffer.from(picked),Buffer.from(expected));manual.dispose();console.log('TI-84: four selected corners decode exact audio with every marker removed');
 const blank={width:320,height:240,data:new Uint8ClampedArray(320*240*4).fill(127)};assert.equal(decoder.autoDecode(blank,'ti84'),null,'lost screen must not replay stale payload');encoder.dispose();decoder.dispose();console.log('TI-84: missing screen rejected');
+
+// Optional private camera regression: zlib RGBA8, cropped to 537 x 955.
+// The user image stays local and is never included in the public repository.
+if(process.env.TI84_CAMERA_FIXTURE){
+const photo={width:537,height:955,data:new Uint8ClampedArray(inflateSync(readFileSync(process.env.TI84_CAMERA_FIXTURE)))};
+const camera=await LiveCodec.create(p);const photographed=camera.autoDecode(photo,'ti84');assert(photographed,`Real iPhone photo: ${camera.stage}`);assert.equal(camera.markers,4);const block=camera.audio(photographed);assert.equal(block.index,50);assert.equal(block.total,64);assert.equal(block.sampleRate,8000);assert.equal(createHash('sha256').update(photographed).digest('hex'),'aa0af784377b6174d62aa60e3f435cbba70142472281487455a803c534ee267e');camera.dispose();console.log('Actual IMG_5407 iPhone preview: automatic 4-marker lock, sideways orientation, exact song packet 50/64 and CRC verified');
+}

@@ -11,13 +11,22 @@ pub unsafe extern "C" fn robust_alignment_candidates(out:*mut f32)->i32{if out.i
 const CENTERS:[Point;4]=[Point{x:16.,y:16.},Point{x:368.,y:16.},Point{x:368.,y:112.},Point{x:16.,y:112.}];
 const DOTS:[Point;4]=[Point{x:16.,y:36.},Point{x:368.,y:36.},Point{x:368.,y:92.},Point{x:16.,y:92.}];
 const GRID:[Point;4]=[Point{x:32.,y:32.},Point{x:352.,y:32.},Point{x:352.,y:96.},Point{x:32.,y:96.}];
-fn ratio(r:&[usize;5])->Option<f32>{
+fn ratio(r:&[usize;5],edge_tolerant:bool)->Option<f32>{
+    // LCD glow erodes the thin outer black rings; at the display edge they
+    // may instead join the dark bezel. Estimate scale from the inner runs,
+    // retaining both outer edges without demanding a QR-perfect thickness.
+    if edge_tolerant {
+        let unit=(r[1]+r[2]+r[3]) as f32/5.;
+        if unit<1.5||(r[0] as f32)<unit*0.2||(r[4] as f32)<unit*0.2{return None;}
+        for i in 1..4 {let k=if i==2{3.}else{1.};if (r[i] as f32-k*unit).abs()>k*unit*0.6{return None;}}
+        return Some(unit);
+    }
     let unit=r.iter().sum::<usize>() as f32/7.;
     if unit<1.5 || r.iter().any(|&n|n==0){return None;}
     for i in 0..5 {let k=if i==2 {3.}else{1.};if (r[i] as f32-k*unit).abs()>k*unit*0.55{return None;}}
     Some(unit)
 }
-fn cross(gray:&[u8],w:usize,h:usize,x:usize,y:usize,vertical:bool,t:u8)->Option<(f32,f32)>{
+fn cross(gray:&[u8],w:usize,h:usize,x:usize,y:usize,vertical:bool,t:u8,edge_tolerant:bool)->Option<(f32,f32)>{
     let length=if vertical{h}else{w};let center=if vertical{y}else{x};
     let dark=|pos:usize|{gray[if vertical{pos*w+x}else{y*w+pos}]<t};
     if !dark(center){return None;}
@@ -28,7 +37,7 @@ fn cross(gray:&[u8],w:usize,h:usize,x:usize,y:usize,vertical:bool,t:u8)->Option<
     while l>0 && dark(l-1){r[0]+=1;l-=1;}
     let mut q=hi;while q<length && !dark(q){r[3]+=1;q+=1;}
     while q<length && dark(q){r[4]+=1;q+=1;}
-    let scale=ratio(&r)?;Some(((lo+hi) as f32/2.,scale))
+    let scale=ratio(&r,edge_tolerant)?;Some(((lo+hi) as f32/2.,scale))
 }
 fn homography(src:&[Point;4],dst:&[Point;4])->Option<[f32;8]>{
     let mut a=[[0f32;9];8];
@@ -70,11 +79,11 @@ unsafe fn locate(rgba:*const u8,width:u32,height:u32,out:*mut f32,centers:&[Poin
         for x in 1..=w {let next=x<w && gray[y*w+x]<t;if x==w||next!=dark {runs.push((start,x-start,dark));start=x;dark=next;}}
         for win in runs.windows(5) {
             if !win[0].2{continue;}
-            let lengths=std::array::from_fn(|i|win[i].1);let Some(unit)=ratio(&lengths)else{continue;};
+            let lengths=std::array::from_fn(|i|win[i].1);let Some(unit)=ratio(&lengths,module!=4.)else{continue;};
             let cx=win[2].0+win[2].1/2;
-            let Some((cy,vs))=cross(&gray,w,h,cx,y,true,t)else{continue;};if (unit-vs).abs()>unit*0.65{continue;}
-            let Some((rx,hs))=cross(&gray,w,h,cx,cy as usize,false,t)else{continue;};
-            let Some((ry,_))=cross(&gray,w,h,rx as usize,cy as usize,true,t)else{continue;};
+            let Some((cy,vs))=cross(&gray,w,h,cx,y,true,t,module!=4.)else{continue;};if (unit-vs).abs()>unit*0.65{continue;}
+            let Some((rx,hs))=cross(&gray,w,h,cx,cy as usize,false,t,module!=4.)else{continue;};
+            let Some((ry,_))=cross(&gray,w,h,rx as usize,cy as usize,true,t,module!=4.)else{continue;};
             let p=Point{x:rx,y:ry};let scale=(hs+vs)*0.5;
             if let Some(f)=finders.iter_mut().find(|f|(f.p.x-p.x).hypot(f.p.y-p.y)<scale*2.) {
                 let n=f.hits as f32;f.p.x=(f.p.x*n+p.x)/(n+1.);f.p.y=(f.p.y*n+p.y)/(n+1.);f.hits+=1;
