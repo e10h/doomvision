@@ -19,7 +19,7 @@ export default function UsbReceiver() {
   const [status,setStatus]=useState("Ready to connect");
   const [connected,setConnected]=useState(false), [busy,setBusy]=useState(false);
   const [error,setError]=useState("");
-  const [stats,setStats]=useState({chunks:0,rate:16000,mode:"Piano",queued:0,underruns:0,dropped:0});
+  const [stats,setStats]=useState({chunks:0,rate:16000,mode:"Piano",queued:0,underruns:0,dropped:0,pps:0,missing:0});
   const canvas=useRef<HTMLCanvasElement>(null), session=useRef<Session|null>(null);
   function cleanup(s: Session) {
     s.active=false; if(s.animation)cancelAnimationFrame(s.animation);
@@ -33,7 +33,7 @@ export default function UsbReceiver() {
     const usb=(navigator as Navigator & {usb?:Usb}).usb;
     if(!usb){setError("Open this page in Chrome or Edge on your Mac. USB access needs localhost or HTTPS.");return;}
     setError("");setBusy(true);setStatus("Select your calculator");
-    setStats({chunks:0,rate:16000,mode:"Piano",queued:0,underruns:0,dropped:0});
+    setStats({chunks:0,rate:16000,mode:"Piano",queued:0,underruns:0,dropped:0,pps:0,missing:0});
     const context=new AudioContext();
     const s: Session={active:true,context};session.current=s;
     // Both calls originate in the button gesture: audio unlock and USB picker.
@@ -43,7 +43,7 @@ export default function UsbReceiver() {
       await resume;
       const device=await chosen;s.device=device;
       if(!s.active){cleanup(s);return;}
-      if(!/^(Doomvision PCM[56]|TI-Boy CE PCM[12])$/.test(device.productName??""))throw Error("Run DVUSB6 or TI-Boy USB, reconnect the cable, then select its PCM audio device.");
+      if(!/^(Doomvision PCM[56]|TI-Boy CE PCM[123])$/.test(device.productName??""))throw Error("Run DVUSB6 or TI-Boy USB, reconnect the cable, then select its PCM audio device.");
       setStatus("Opening calculator…");
       await device.open();
       if(!device.configuration)await device.selectConfiguration(1);
@@ -61,16 +61,18 @@ export default function UsbReceiver() {
       const wave=new Float32Array(analyser.fftSize);
       function draw(){if(!s.active)return;const el=canvas.current,ctx=el?.getContext('2d');if(el&&ctx){const ratio=window.devicePixelRatio||1,w=el.clientWidth,h=el.clientHeight;if(el.width!==w*ratio||el.height!==h*ratio){el.width=w*ratio;el.height=h*ratio;}ctx.setTransform(ratio,0,0,ratio,0,0);ctx.clearRect(0,0,w,h);ctx.strokeStyle='#253c3b';ctx.beginPath();ctx.moveTo(0,h/2);ctx.lineTo(w,h/2);ctx.stroke();analyser.getFloatTimeDomainData(wave);ctx.strokeStyle='#83f6be';ctx.lineWidth=1.5;ctx.beginPath();wave.forEach((v,i)=>{const x=i*w/(wave.length-1),y=h/2-v*h*.43;if(i)ctx.lineTo(x,y);else ctx.moveTo(x,y);});ctx.stroke();}s.animation=requestAnimationFrame(draw);}
       draw();setBusy(false);setConnected(true);setStatus("Connected · waiting for audio");
-      const decoder=new UsbPcmDecoder();let last:number|undefined,chunks=0,report=0;
+      const decoder=new UsbPcmDecoder();let last:number|undefined,chunks=0,report=0,rateStart=performance.now(),rateChunks=0,pps=0,missing=0;
       while(s.active){
         const result=await device.transferIn(1,272);
         if(!s.active)break;
         if(result.status!=="ok")throw Error(`USB transfer ${result.status}. Reconnect the calculator and try again.`);
         if(!result.data)continue;
         for(const packet of decoder.feed(new Uint8Array(result.data.buffer,result.data.byteOffset,result.data.byteLength))){
-          if(last===packet.sequence)continue;last=packet.sequence;
+          if(last===packet.sequence)continue;
+          if(last!==undefined){const gap=(packet.sequence-last-1)>>>0;if(gap<100000)missing+=gap;}last=packet.sequence;
           node.port.postMessage({pcm:packet.pcm,rate:packet.rate},[packet.pcm.buffer]);chunks++;
-          if(performance.now()-report>250||chunks===1){setStatus("Streaming audio");setStats(prev=>({...prev,chunks,rate:packet.rate,mode:packet.flags&4?"Game Boy":packet.flags&1?"Piano":packet.flags&2?"Paused":"Rick clip"}));report=performance.now();}
+          const elapsed=performance.now()-rateStart;if(elapsed>=1000){pps=Math.round((chunks-rateChunks)*1000/elapsed);rateStart=performance.now();rateChunks=chunks;}
+          if(performance.now()-report>250||chunks===1){setStatus("Streaming audio");setStats(prev=>({...prev,chunks,pps,missing,rate:packet.rate,mode:packet.flags&4?"Game Boy":packet.flags&1?"Piano":packet.flags&2?"Paused":"Rick clip"}));report=performance.now();}
         }
       }
     } catch(e) {
@@ -83,11 +85,11 @@ export default function UsbReceiver() {
     <section className={styles.panel}>
       <div className={styles.toolbar}><span role="status"><i className={connected?styles.live:styles.dot}/>{status}</span><button onClick={connected?disconnect:connect} disabled={busy}>{busy?"Connecting…":connected?"Disconnect":"Connect calculator"}</button></div>
       <canvas ref={canvas} className={styles.wave} aria-label="Live waveform of the calculator audio playing through your speakers"/>
-      <div className={styles.stats}><span>{connected?stats.mode:"Live waveform"}</span><span>{stats.rate/1000} kHz · mono</span><span>{stats.chunks.toLocaleString()} chunks</span><span>{stats.queued} ms buffered</span></div>
+      <div className={styles.stats}><span>{connected?stats.mode:"Live waveform"}</span><span>{stats.rate/1000} kHz · mono</span><span>{stats.chunks.toLocaleString()} chunks · {stats.pps}/s</span><span>{stats.queued} ms buffered</span></div>
     </section>
     {error&&<p role="alert" className={styles.error}>{error}</p>}
-    <p className={styles.hint}>Choose <strong>Doomvision PCM6</strong> or <strong>TI-Boy CE PCM2</strong> in the device picker. Use Chrome or Edge on Mac.<br/>Close TI Connect CE and the native receiver first. DVUSB6: Y= switches piano / clip. TI-Boy: use the game’s controls.</p>
-    {connected&&<p className={styles.health}>{stats.underruns} audio underruns · {stats.dropped} dropped samples</p>}
+    <p className={styles.hint}>Choose <strong>Doomvision PCM6</strong> or <strong>TI-Boy CE PCM3</strong> in the device picker. Use Chrome or Edge on Mac.<br/>Close TI Connect CE and the native receiver first. DVUSB6: Y= switches piano / clip. TI-Boy: use the game’s controls.</p>
+    {connected&&<p className={styles.health}>{stats.underruns} audio underruns · {stats.dropped} dropped samples · {stats.missing} missing USB chunks</p>}
     <a className={styles.download} href="/downloads/DVUSB6.8xp">Download DVUSB6 ↗</a>{" · "}
     <a className={styles.download} href="/downloads/tiboyce-usb-audio.zip">Download TI-Boy USB prototype ↗</a>
   </main>;
