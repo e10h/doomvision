@@ -50,7 +50,8 @@ export default function UsbReceiver() {
       const iface=device.configuration?.interfaces.find(i=>i.alternates.some(a=>a.interfaceClass===255&&a.interfaceSubclass===0x44&&a.interfaceProtocol===1));
       if(!iface)throw Error("No Doomvision audio interface. Run DVUSB6 and reconnect the cable.");
       const alternate=iface.alternates.find(a=>a.interfaceClass===255&&a.interfaceSubclass===0x44&&a.interfaceProtocol===1)!;
-      await device.claimInterface(iface.interfaceNumber);
+      try { await device.claimInterface(iface.interfaceNumber); }
+      catch { throw Error("Calculator USB is busy. Quit TI Connect CE with ⌘Q, close other USB receiver tabs, then unplug and reconnect the cable while the game stays running."); }
       await device.selectAlternateInterface(iface.interfaceNumber,alternate.alternateSetting);
       await context.audioWorklet.addModule('/usb-audio-worklet.js');
       if(!s.active){cleanup(s);return;}
@@ -85,8 +86,9 @@ export default function UsbReceiver() {
       <div className={styles.stats}><span>{connected?stats.mode:"Live waveform"}</span><span>{stats.rate/1000} kHz · mono</span><span>{stats.chunks.toLocaleString()} chunks</span><span>{stats.queued} ms buffered</span></div>
     </section>
     {error&&<p role="alert" className={styles.error}>{error}</p>}
-    <p className={styles.hint}>Choose <strong>Doomvision PCM6</strong> or <strong>TI-Boy CE PCM1</strong> in the device picker. Use Chrome or Edge on Mac.<br/>Close TI Connect CE and the native receiver first. Y= switches piano / clip.</p>
+    <p className={styles.hint}>Choose <strong>Doomvision PCM6</strong> or <strong>TI-Boy CE PCM1</strong> in the device picker. Use Chrome or Edge on Mac.<br/>Close TI Connect CE and the native receiver first. DVUSB6: Y= switches piano / clip. TI-Boy: use the game’s controls.</p>
     {connected&&<p className={styles.health}>{stats.underruns} audio underruns · {stats.dropped} dropped samples</p>}
-    <a className={styles.download} href="/downloads/DVUSB6.8xp">Download DVUSB6 for your calculator ↗</a>
+    <a className={styles.download} href="/downloads/DVUSB6.8xp">Download DVUSB6 ↗</a>{" · "}
+    <a className={styles.download} href="/downloads/tiboyce-usb-audio.zip">Download TI-Boy USB prototype ↗</a>
   </main>;
 }
