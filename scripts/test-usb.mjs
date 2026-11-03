@@ -3,6 +3,7 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import {UsbPcmDecoder} from '../src/lib/usb-pcm.mjs';
 function packet(seq,rate=16000){const bytes=new Uint8Array(272),v=new DataView(bytes.buffer);bytes.set([68,86,85,49]);v.setUint32(4,seq,true);v.setUint32(8,rate,true);v.setUint16(12,128,true);v.setUint16(14,1,true);for(let i=0;i<128;i++)v.setInt16(16+i*2,i*-100,true);return bytes;}
+const gameBoy=packet(9);new DataView(gameBoy.buffer).setUint16(14,4,true);assert.equal(new UsbPcmDecoder().feed(gameBoy)[0].flags,4);
 const decoder=new UsbPcmDecoder(),received=[];
 const bad=packet(1);bad[12]=255;
 for(const byte of new Uint8Array([...bad,...packet(7),...packet(8,8000)]))received.push(...decoder.feed(new Uint8Array([byte])));

@@ -43,7 +43,7 @@ export default function UsbReceiver() {
       await resume;
       const device=await chosen;s.device=device;
       if(!s.active){cleanup(s);return;}
-      if(!/^Doomvision PCM[56]$/.test(device.productName??""))throw Error("Run DVUSB6 on the calculator, reconnect its cable, then select Doomvision PCM6.");
+      if(!/^(Doomvision PCM[56]|TI-Boy CE PCM1)$/.test(device.productName??""))throw Error("Run DVUSB6 or TI-Boy USB, reconnect the cable, then select its PCM audio device.");
       setStatus("Opening calculator…");
       await device.open();
       if(!device.configuration)await device.selectConfiguration(1);
@@ -69,7 +69,7 @@ export default function UsbReceiver() {
         for(const packet of decoder.feed(new Uint8Array(result.data.buffer,result.data.byteOffset,result.data.byteLength))){
           if(last===packet.sequence)continue;last=packet.sequence;
           node.port.postMessage({pcm:packet.pcm,rate:packet.rate},[packet.pcm.buffer]);chunks++;
-          if(performance.now()-report>250||chunks===1){setStatus("Streaming audio");setStats(prev=>({...prev,chunks,rate:packet.rate,mode:packet.flags&1?"Piano":packet.flags&2?"Paused":"Rick clip"}));report=performance.now();}
+          if(performance.now()-report>250||chunks===1){setStatus("Streaming audio");setStats(prev=>({...prev,chunks,rate:packet.rate,mode:packet.flags&4?"Game Boy":packet.flags&1?"Piano":packet.flags&2?"Paused":"Rick clip"}));report=performance.now();}
         }
       }
     } catch(e) {
@@ -78,14 +78,14 @@ export default function UsbReceiver() {
   }
   return <main className={styles.page}>
     <header className={styles.header}><Link href="/">doomvision</Link><span>USB AUDIO</span></header>
-    <section className={styles.intro}><div className={styles.eyebrow}>CALCULATOR → SPEAKERS</div><h1>Hear your calculator.</h1><p>Run DVUSB6 on your TI-84 Plus CE, plug it into your Mac, and connect.</p></section>
+    <section className={styles.intro}><div className={styles.eyebrow}>CALCULATOR → SPEAKERS</div><h1>Hear your calculator.</h1><p>Run DVUSB6 or TI-Boy USB on your TI-84 Plus CE, plug it into your Mac, and connect.</p></section>
     <section className={styles.panel}>
       <div className={styles.toolbar}><span role="status"><i className={connected?styles.live:styles.dot}/>{status}</span><button onClick={connected?disconnect:connect} disabled={busy}>{busy?"Connecting…":connected?"Disconnect":"Connect calculator"}</button></div>
       <canvas ref={canvas} className={styles.wave} aria-label="Live waveform of the calculator audio playing through your speakers"/>
       <div className={styles.stats}><span>{connected?stats.mode:"Live waveform"}</span><span>{stats.rate/1000} kHz · mono</span><span>{stats.chunks.toLocaleString()} chunks</span><span>{stats.queued} ms buffered</span></div>
     </section>
     {error&&<p role="alert" className={styles.error}>{error}</p>}
-    <p className={styles.hint}>Choose <strong>Doomvision PCM6</strong> in the device picker. Use Chrome or Edge on Mac.<br/>Close TI Connect CE and the native receiver first. Y= switches piano / clip.</p>
+    <p className={styles.hint}>Choose <strong>Doomvision PCM6</strong> or <strong>TI-Boy CE PCM1</strong> in the device picker. Use Chrome or Edge on Mac.<br/>Close TI Connect CE and the native receiver first. Y= switches piano / clip.</p>
     {connected&&<p className={styles.health}>{stats.underruns} audio underruns · {stats.dropped} dropped samples</p>}
     <a className={styles.download} href="/downloads/DVUSB6.8xp">Download DVUSB6 for your calculator ↗</a>
   </main>;
