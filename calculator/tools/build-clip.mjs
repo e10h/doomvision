@@ -3,7 +3,7 @@ import{execFileSync}from'node:child_process';
 import{fileURLToPath}from'node:url';
 const root=fileURLToPath(new URL('../',import.meta.url)),out=root+'clip-build/';mkdirSync(out+'src/',{recursive:true});
 execFileSync('ffmpeg',['-y','-v','error','-i',root+'../public/samples/ill-follow-the-sun.mp3','-t','8','-f','s16le','-ac','1','-ar','8000',out+'clip.pcm']);
-execFileSync(process.execPath,[root+'tools/build-song.mjs',out+'clip.pcm'],{env:{...process.env,CE_OUTPUT:out},stdio:'inherit'});
+execFileSync(process.execPath,[root+'tools/build-song.mjs',out+'clip.pcm'],{env:{...process.env,CE_OUTPUT:out,CE_COLORS:process.env.CE_COLORS??'6'},stdio:'inherit'});
 copyFileSync(root+'src/render.h',out+'src/render.h');
 const frames=readFileSync(out+'assets/song-frames.bin');
 writeFileSync(out+'src/embedded.c',`#include <stdint.h>\nconst uint8_t embedded_frames[${frames.length}]={${[...frames].join(',')}};\n`);
