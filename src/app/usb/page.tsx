@@ -43,7 +43,7 @@ export default function UsbReceiver() {
       await resume;
       const device=await chosen;s.device=device;
       if(!s.active){cleanup(s);return;}
-      if(!/^(Doomvision PCM[56]|TI-Boy CE PCM1)$/.test(device.productName??""))throw Error("Run DVUSB6 or TI-Boy USB, reconnect the cable, then select its PCM audio device.");
+      if(!/^(Doomvision PCM[56]|TI-Boy CE PCM[12])$/.test(device.productName??""))throw Error("Run DVUSB6 or TI-Boy USB, reconnect the cable, then select its PCM audio device.");
       setStatus("Opening calculator…");
       await device.open();
       if(!device.configuration)await device.selectConfiguration(1);
@@ -86,7 +86,7 @@ export default function UsbReceiver() {
       <div className={styles.stats}><span>{connected?stats.mode:"Live waveform"}</span><span>{stats.rate/1000} kHz · mono</span><span>{stats.chunks.toLocaleString()} chunks</span><span>{stats.queued} ms buffered</span></div>
     </section>
     {error&&<p role="alert" className={styles.error}>{error}</p>}
-    <p className={styles.hint}>Choose <strong>Doomvision PCM6</strong> or <strong>TI-Boy CE PCM1</strong> in the device picker. Use Chrome or Edge on Mac.<br/>Close TI Connect CE and the native receiver first. DVUSB6: Y= switches piano / clip. TI-Boy: use the game’s controls.</p>
+    <p className={styles.hint}>Choose <strong>Doomvision PCM6</strong> or <strong>TI-Boy CE PCM2</strong> in the device picker. Use Chrome or Edge on Mac.<br/>Close TI Connect CE and the native receiver first. DVUSB6: Y= switches piano / clip. TI-Boy: use the game’s controls.</p>
     {connected&&<p className={styles.health}>{stats.underruns} audio underruns · {stats.dropped} dropped samples</p>}
     <a className={styles.download} href="/downloads/DVUSB6.8xp">Download DVUSB6 ↗</a>{" · "}
     <a className={styles.download} href="/downloads/tiboyce-usb-audio.zip">Download TI-Boy USB prototype ↗</a>
