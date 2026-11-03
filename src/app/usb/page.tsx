@@ -91,6 +91,7 @@ export default function UsbReceiver() {
     if(result.status!=="ok")throw Error("The calculator could not change audio quality.");
   }
   async function changeQuality(rate:number){
+    if(rate!==4000){setError("This firmware currently supports the verified Fast 4 kHz setting.");return;}
     const previous=quality;setQuality(rate);const s=session.current;
     if(!s?.active||s.device?.productName!=="TI-Boy CE PCM6"){setStats(prev=>({...prev,rate,chunks:0,pps:0}));return;}
     setQualityBusy(true);setError("");s.expectedRate=rate;s.warmUntil=performance.now()+500;s.playbackStarted=false;
@@ -103,7 +104,7 @@ export default function UsbReceiver() {
     <section className={styles.intro}><div className={styles.eyebrow}>CALCULATOR → SPEAKERS</div><h1>Hear your calculator.</h1><p>Run DVUSB6 or TI-Boy USB on your TI-84 Plus CE, plug it into your Mac, and connect.</p></section>
     <section className={styles.panel}>
       <div className={styles.toolbar}><span role="status"><i className={connected?styles.live:styles.dot}/>{status}</span><button onClick={connected?disconnect:connect} disabled={busy}>{busy?"Connecting…":connected?"Disconnect":"Connect calculator"}</button></div>
-      {(!connected||deviceName.startsWith("TI-Boy"))&&<label className={styles.quality}>Game Boy audio quality <select aria-label="Game Boy audio quality" value={quality} disabled={busy||qualityBusy} onChange={e=>void changeQuality(Number(e.target.value))}><option value={4000}>Fast · 4 kHz</option><option value={8000}>Balanced · 8 kHz</option><option value={16000}>High · 16 kHz (slower game)</option></select><small>Lower rates leave more CPU time for gameplay.</small></label>}
+      {(!connected||deviceName.startsWith("TI-Boy"))&&<label className={styles.quality}>Game Boy audio quality <select aria-label="Game Boy audio quality" value={quality} disabled={busy||qualityBusy} onChange={e=>void changeQuality(Number(e.target.value))}><option value={4000}>Fast · 4 kHz</option><option value={8000} disabled>Balanced · 8 kHz (not yet verified)</option><option value={16000} disabled>High · 16 kHz (not yet verified)</option></select><small>Lower rates leave more CPU time for gameplay.</small></label>}
       <canvas ref={canvas} className={styles.wave} aria-label="Live waveform of the calculator audio playing through your speakers"/>
       <div className={styles.stats}>{deviceName&&<span>{deviceName}</span>}<span>{connected?stats.mode:"Live waveform"}</span><span>{stats.rate/1000} kHz · mono</span><span>{stats.chunks.toLocaleString()} chunks · {stats.pps}/s · target {Math.round(stats.rate/128)}/s</span><span>{stats.queued} ms buffered</span></div>
     </section>
