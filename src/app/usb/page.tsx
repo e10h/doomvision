@@ -47,7 +47,7 @@ export default function UsbReceiver() {
       const device=await chosen;s.device=device;setDeviceName(device.productName??"Calculator");
       if(!s.active){cleanup(s);return;}
       if(/^TI-Boy CE PCM[12345]$/.test(device.productName??""))throw Error(`The calculator is still running ${device.productName}. Transfer TIBUSB7 and TBUSB007, exit the old program, then run TIBUSB7 and reconnect its cable.`);
-      if(!/^(Doomvision PCM[56]|TI-Boy CE PCM[67])$/.test(device.productName??""))throw Error("Run DVUSB6 or TIBUSB7, reconnect the cable, then select its PCM audio device.");
+      if(!/^(Doomvision PCM[56]|TI-Boy CE PCM[67]|Doom84 USB PCM)$/.test(device.productName??""))throw Error("Run DVUSB6 or TIBUSB7, reconnect the cable, then select its PCM audio device.");
       setStatus("Opening calculator…");
       await device.open();
       if(!device.configuration)await device.selectConfiguration(1);
@@ -58,7 +58,7 @@ export default function UsbReceiver() {
       catch { throw Error("Calculator USB is busy. Quit TI Connect CE with ⌘Q, close other USB receiver tabs, then unplug and reconnect the cable while the game stays running."); }
       await device.selectAlternateInterface(iface.interfaceNumber,alternate.alternateSetting);
       if(device.productName==='TI-Boy CE PCM7'){await requestQuality(device,quality);s.expectedRate=quality;}
-      else if(device.productName==='TI-Boy CE PCM6'){setQuality(4000);s.expectedRate=4000;}
+      else if(device.productName==='TI-Boy CE PCM6'||device.productName==='Doom84 USB PCM'){setQuality(4000);s.expectedRate=4000;}
       await context.audioWorklet.addModule('/usb-audio-worklet.js');
       if(!s.active){cleanup(s);return;}
       const node=new AudioWorkletNode(context,'usb-audio',{numberOfInputs:0,numberOfOutputs:1,outputChannelCount:[1]});s.node=node;
@@ -80,7 +80,7 @@ export default function UsbReceiver() {
           if(last!==undefined){const gap=(packet.sequence-last-1)>>>0;if(gap<100000)missing+=gap;}last=packet.sequence;
           node.port.postMessage({pcm:packet.pcm,rate:packet.rate,flags:packet.flags},[packet.pcm.buffer]);chunks++;
           const elapsed=performance.now()-rateStart;if(elapsed>=1000){pps=Math.round((chunks-rateChunks)*1000/elapsed);rateStart=performance.now();rateChunks=chunks;}
-          if(performance.now()-report>250||chunks===1){setStats(prev=>({...prev,chunks,pps,missing,rate:packet.rate,mode:packet.flags&4?"Game Boy":packet.flags&1?"Piano":packet.flags&2?"Paused":"Rick clip"}));report=performance.now();}
+          if(performance.now()-report>250||chunks===1){setStats(prev=>({...prev,chunks,pps,missing,rate:packet.rate,mode:device.productName==="Doom84 USB PCM"?"Doom audio":packet.flags&4?"Game Boy":packet.flags&1?"Piano":packet.flags&2?"Paused":"Rick clip"}));report=performance.now();}
         }
       }
     } catch(e) {
@@ -110,7 +110,7 @@ export default function UsbReceiver() {
       <div className={styles.stats}>{deviceName&&<span>{deviceName}</span>}<span>{connected?stats.mode:"Live waveform"}</span><span>{stats.rate/1000} kHz · mono</span><span>{stats.chunks.toLocaleString()} chunks · {stats.pps}/s · target {Math.round(stats.rate/128)}/s</span><span>{stats.queued} ms buffered</span></div>
     </section>
     {error&&<p role="alert" className={styles.error}>{error}</p>}
-    <p className={styles.hint}>Choose <strong>Doomvision PCM6</strong> or <strong>TI-Boy CE PCM7</strong> in the device picker. Use Chrome or Edge on Mac.<br/>Close TI Connect CE and the native receiver first. DVUSB6: Y= switches piano / clip. TI-Boy: use the game’s controls.</p>
+    <p className={styles.hint}>Choose <strong>Doomvision PCM6</strong>, <strong>Doom84 USB PCM</strong>, or <strong>TI-Boy CE PCM7</strong> in the device picker. Use Chrome or Edge on Mac.<br/>Close TI Connect CE and the native receiver first. DVUSB6: Y= switches piano / clip. TI-Boy: use the game’s controls.</p>
     {(connected||stats.chunks>0)&&<p className={styles.health}>{stats.underruns} audio underruns · {stats.dropped} dropped samples · {stats.missing} missing USB chunks</p>}
     <a className={styles.download} href="/downloads/DVUSB6.8xp">Download DVUSB6 ↗</a>{" · "}
     <a className={styles.download} href="/downloads/TBAUD7.8xg">Download TI-Boy USB prototype ↗</a>
