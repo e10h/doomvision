@@ -24,6 +24,7 @@ const DEFAULT_HOMEPAGE = `<!DOCTYPE html>
     <a class="card" href="/api/browser/proxy?url=https%3A%2F%2Fen.wikipedia.org%2Fwiki%2FTexas_Instruments">📐 TI History</a>
     <a class="card" href="/api/browser/proxy?url=https%3A%2F%2Fen.wikipedia.org%2Fwiki%2FDoom_(1993_video_game)">👾 DOOM (1993)</a>
     <a class="card" href="/api/browser/proxy?url=https%3A%2F%2Ftext.npr.org">📻 NPR Text News</a>
+    <a class="card" href="/api/browser/proxy?url=https%3A%2F%2Fhtml5test.com">🧪 HTML5 Test</a>
   </div>
   <div class="footer">TI-84 Plus CE Remote Browser · WebUSB</div>
 </body>
@@ -70,24 +71,46 @@ export async function GET(req: NextRequest) {
 
     let html = await res.text();
 
-    // Inject base tag for relative assets
     const baseTag = `<base href="${finalUrl}">`;
     const mobileStyle = `
       <style>
-        body { max-width: 320px !important; margin: 0 auto !important; font-size: 13px !important; line-height: 1.4 !important; }
+        html, body {
+          max-width: 320px !important;
+          margin: 0 auto !important;
+          font-size: 13px !important;
+          line-height: 1.4 !important;
+          overflow-y: auto !important;
+          scroll-behavior: auto !important;
+        }
         img { max-width: 100% !important; height: auto !important; }
         header, nav, .header, .nav { max-width: 320px !important; }
       </style>
     `;
 
-    // Rewrite anchor links to proxy
-    html = html.replace(/<a\s+([^>]*?)href=["'](https?:\/\/[^"']+)["']/gi, (match, before, href) => {
-      return `<a ${before}href="/api/browser/proxy?url=${encodeURIComponent(href)}"`;
+    // Rewrite all anchor links (relative or absolute) to route through proxy
+    html = html.replace(/<a\s+([^>]*?)href=(?:["']([^"']+)["']|([^\s>]+))/gi, (match, before, quotedHref, bareHref) => {
+      const rawHref = quotedHref || bareHref || "";
+      if (!rawHref || rawHref.startsWith("#") || rawHref.startsWith("javascript:")) {
+        return match;
+      }
+      try {
+        const resolved = new URL(rawHref, finalUrl).toString();
+        return `<a ${before}href="/api/browser/proxy?url=${encodeURIComponent(resolved)}"`;
+      } catch {
+        return match;
+      }
     });
 
     // Rewrite image sources to proxy to prevent canvas cross-origin tainting
-    html = html.replace(/<img\s+([^>]*?)src=["'](https?:\/\/[^"']+)["']/gi, (match, before, src) => {
-      return `<img ${before}src="/api/browser/proxy?url=${encodeURIComponent(src)}"`;
+    html = html.replace(/<img\s+([^>]*?)src=(?:["']([^"']+)["']|([^\s>]+))/gi, (match, before, quotedSrc, bareSrc) => {
+      const rawSrc = quotedSrc || bareSrc || "";
+      if (!rawSrc || rawSrc.startsWith("data:")) return match;
+      try {
+        const resolved = new URL(rawSrc, finalUrl).toString();
+        return `<img ${before}src="/api/browser/proxy?url=${encodeURIComponent(resolved)}"`;
+      } catch {
+        return match;
+      }
     });
 
     if (html.includes("<head>")) {

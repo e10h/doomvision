@@ -303,29 +303,48 @@ export default function BrowserPage() {
         const webX = x;
         const webY = Math.max(0, y - 16);
 
+        console.log("[Calc Click]", { x, y, webX, webY });
+
         if (doc && iframe) {
           const el = doc.elementFromPoint(webX, webY);
           if (el) {
+            console.log("[Click Target]", el.tagName, (el as HTMLElement).innerText?.slice(0, 30));
+
+            // Check if inside link, button, input or clickable widget
             const a = el.closest("a");
+            const btn = el.closest("button, [role='button'], input, summary, [onclick]");
+
             if (a && a.href) {
+              console.log("[Navigating Link]", a.href);
+              setCurrentUrl(a.href);
+              setInputUrl(a.href);
               iframe.src = a.href;
+            } else if (btn) {
+              (btn as HTMLElement).click();
+              (btn as HTMLElement).focus?.();
+              setTimeout(() => void captureAndStreamIframe(), 150);
             } else {
               const evtInit = { bubbles: true, cancelable: true, clientX: webX, clientY: webY, view: win };
               el.dispatchEvent(new MouseEvent("mousedown", evtInit));
               el.dispatchEvent(new MouseEvent("mouseup", evtInit));
               el.dispatchEvent(new MouseEvent("click", evtInit));
+              (el as HTMLElement).click?.();
               (el as HTMLElement).focus?.();
 
-              setTimeout(() => void captureAndStreamIframe(), 100);
+              setTimeout(() => void captureAndStreamIframe(), 150);
             }
           }
         }
       } else if (type === PKT_SCROLL) {
         const view = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
         const delta = view.getInt16(0, true);
-        if (win) {
+        console.log("[Calc Scroll]", delta);
+
+        if (win && doc) {
           win.scrollBy({ top: delta, behavior: "auto" });
-          setTimeout(() => void captureAndStreamIframe(), 30);
+          doc.documentElement.scrollTop += delta;
+          doc.body.scrollTop += delta;
+          setTimeout(() => void captureAndStreamIframe(), 40);
         }
       } else if (type === PKT_NAV_URL) {
         const urlStr = new TextDecoder().decode(payload).replace(/\0/g, "").trim();

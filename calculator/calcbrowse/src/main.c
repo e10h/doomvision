@@ -328,9 +328,13 @@ int main(void) {
         return 1;
     }
 
+    static kb_key_t prev_g1 = 0;
+    static kb_key_t prev_g6 = 0;
+    static int scroll_hold = 0;
+
     while (1) {
         kb_key_t g1, g6, g7;
-        uint8_t csc;
+        kb_key_t g1_pressed, g6_pressed;
         bool cursor_moved = false;
 
         usb_HandleEvents();
@@ -339,15 +343,19 @@ int main(void) {
         g1 = kb_Data[1];
         g6 = kb_Data[6];
         g7 = kb_Data[7];
-        csc = os_GetCSC();
 
-        /* Exit program */
-        if (g1 & kb_Yequ || csc == sk_Yequ) {
+        g1_pressed = (g1 ^ prev_g1) & g1;
+        g6_pressed = (g6 ^ prev_g6) & g6;
+        prev_g1 = g1;
+        prev_g6 = g6;
+
+        /* Exit program: [Y=] */
+        if (g1 & kb_Yequ) {
             break;
         }
 
         /* URL Bar Toggle: [WINDOW] */
-        if (csc == sk_Window) {
+        if (g1_pressed & kb_Window) {
             url_bar_active = !url_bar_active;
             if (url_bar_active) {
                 strncpy(url_input, current_url, sizeof(url_input) - 1);
@@ -357,7 +365,8 @@ int main(void) {
         }
 
         if (url_bar_active) {
-            if (csc == sk_Enter || (g6 & kb_Enter)) {
+            uint8_t csc = os_GetCSC();
+            if (g6_pressed & kb_Enter) {
                 if (url_input_len > 0) {
                     strncpy(current_url, url_input, sizeof(current_url) - 1);
                     send_cmd(PKT_NAV_URL, url_input, url_input_len);
@@ -365,11 +374,11 @@ int main(void) {
                 }
                 url_bar_active = false;
                 needs_blit = true;
-            } else if (csc == sk_Clear) {
+            } else if (csc == sk_Clear || (g6_pressed & kb_Clear)) {
                 url_input_len = 0;
                 url_input[0] = '\0';
                 needs_blit = true;
-            } else if (csc == sk_Del || csc == sk_Sub || csc == sk_Zoom) {
+            } else if (csc == sk_Del || (g6_pressed & kb_Sub) || (g1_pressed & kb_Zoom)) {
                 if (url_input_len > 0) {
                     url_input[--url_input_len] = '\0';
                     needs_blit = true;
@@ -409,7 +418,7 @@ int main(void) {
             }
 
             /* Left Click: [ENTER] or [2nd] */
-            if (csc == sk_Enter || csc == sk_2nd) {
+            if ((g6_pressed & kb_Enter) || (g1_pressed & kb_2nd)) {
                 struct {
                     uint16_t x;
                     uint16_t y;
@@ -426,29 +435,37 @@ int main(void) {
                 needs_blit = true;
             }
 
-            /* Scroll: [+] down, [-] up */
-            if (csc == sk_Add) {
-                int16_t delta = 150;
-                send_cmd(PKT_SCROLL, &delta, sizeof(delta));
-                status_msg = "Scrolling…";
-                needs_blit = true;
-            } else if (csc == sk_Sub) {
-                int16_t delta = -150;
-                send_cmd(PKT_SCROLL, &delta, sizeof(delta));
-                status_msg = "Scrolling…";
-                needs_blit = true;
+            /* Scroll: [+] down, [-] up (with hold-repeat) */
+            if (g6 & kb_Add) {
+                if ((g6_pressed & kb_Add) || (scroll_hold > 8 && (scroll_hold & 3) == 0)) {
+                    int16_t delta = 120;
+                    send_cmd(PKT_SCROLL, &delta, sizeof(delta));
+                    status_msg = "Scrolling…";
+                    needs_blit = true;
+                }
+                scroll_hold++;
+            } else if (g6 & kb_Sub) {
+                if ((g6_pressed & kb_Sub) || (scroll_hold > 8 && (scroll_hold & 3) == 0)) {
+                    int16_t delta = -120;
+                    send_cmd(PKT_SCROLL, &delta, sizeof(delta));
+                    status_msg = "Scrolling…";
+                    needs_blit = true;
+                }
+                scroll_hold++;
+            } else {
+                scroll_hold = 0;
             }
 
             /* Navigation: [GRAPH] = Back, [TRACE] = Forward, [ZOOM] = Reload */
-            if (csc == sk_Graph) {
+            if (g1_pressed & kb_Graph) {
                 send_cmd(PKT_NAV_BACK, NULL, 0);
                 status_msg = "Going Back…";
                 needs_blit = true;
-            } else if (csc == sk_Trace) {
+            } else if (g1_pressed & kb_Trace) {
                 send_cmd(PKT_NAV_FORWARD, NULL, 0);
                 status_msg = "Going Forward…";
                 needs_blit = true;
-            } else if (csc == sk_Zoom) {
+            } else if (g1_pressed & kb_Zoom) {
                 send_cmd(PKT_NAV_RELOAD, NULL, 0);
                 status_msg = "Reloading…";
                 needs_blit = true;
