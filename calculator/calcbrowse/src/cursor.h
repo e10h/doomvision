@@ -42,3 +42,4 @@ static inline void draw_cursor(int x, int y, uint8_t black_color, uint8_t white_
 }
 
 #endif
+

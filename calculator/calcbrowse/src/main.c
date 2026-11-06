@@ -198,16 +198,17 @@ static usb_error_t rx_complete(usb_endpoint_t ep, usb_transfer_status_t status, 
                 status_msg = "Receiving page…";
                 tx_busy = false;
             } else if (type == PKT_FRAME_DATA) {
+                uint8_t *vbuf_flat = (uint8_t *)gfx_vbuffer;
                 uint16_t i;
                 for (i = 0; i + 1 < len; i += 2) {
                     uint8_t count = rx_pkt.payload[i];
                     uint8_t color = rx_pkt.payload[i + 1];
-                    while (count > 0 && page_write_idx < TOTAL_PIXELS) {
-                        int py = page_write_idx / SCREEN_W;
-                        int px = page_write_idx % SCREEN_W;
-                        gfx_vbuffer[py][px] = color;
-                        page_write_idx++;
-                        count--;
+                    if (page_write_idx + count > TOTAL_PIXELS) {
+                        count = TOTAL_PIXELS - page_write_idx;
+                    }
+                    if (count > 0) {
+                        memset(vbuf_flat + page_write_idx, color, count);
+                        page_write_idx += count;
                     }
                 }
             } else if (type == PKT_FRAME_END) {

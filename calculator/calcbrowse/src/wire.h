@@ -57,3 +57,4 @@ static inline void brow_init_packet(brow_packet_t *pkt, uint8_t type, uint8_t se
 }
 
 #endif
+

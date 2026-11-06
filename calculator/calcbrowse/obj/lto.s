@@ -2117,20 +2117,20 @@ _queue_rx:                              ; @queue_rx
 	.type	_rx_complete,@function          ; -- Begin function rx_complete
 _rx_complete:                           ; @rx_complete
 ; %bb.0:
-	ld	hl, -11
+	ld	hl, -15
 	call	__frameset
 	ld	hl, (ix + 9)
-	ld	b, 0
+	xor	a, a
 	add	hl, bc
 	or	a, a
 	sbc	hl, bc
-	jp	nz, .LBB9_27
+	jp	nz, .LBB9_23
 ; %bb.1:
 	ld	hl, (ix + 12)
 	ld	de, 8
 	or	a, a
 	sbc	hl, de
-	jp	c, .LBB9_27
+	jp	c, .LBB9_23
 ; %bb.2:
 	ld	a, (_rx_pkt)
 	ld	h, a
@@ -2142,19 +2142,23 @@ _rx_complete:                           ; @rx_complete
 	ld	l, a
 	ld	a, h
 	cp	a, 66
-	jp	nz, .LBB9_27
+	ld	a, 0
+	jp	nz, .LBB9_23
 ; %bb.3:
 	ld	a, c
 	cp	a, 82
-	jp	nz, .LBB9_27
+	ld	a, 0
+	jp	nz, .LBB9_23
 ; %bb.4:
 	ld	a, e
 	cp	a, 79
-	jp	nz, .LBB9_27
+	ld	a, 0
+	jp	nz, .LBB9_23
 ; %bb.5:
 	ld	a, l
 	cp	a, 87
-	jp	nz, .LBB9_27
+	ld	a, 0
+	jp	nz, .LBB9_23
 ; %bb.6:
 	ld	hl, _rx_pkt+6
 	ld	a, (_rx_pkt+4)
@@ -2175,10 +2179,9 @@ _rx_complete:                           ; @rx_complete
 	add	a, l
 	ld	l, a
 	cp	a, 6
-	ld	b, 0
-	jp	nc, .LBB9_27
+	ld	a, 0
+	jp	nc, .LBB9_23
 ; %bb.9:
-	xor	a, a
 	ld	bc, 0
 	ld	c, l
 	ld	hl, JTI9_0
@@ -2197,10 +2200,9 @@ _rx_complete:                           ; @rx_complete
 	ld	(_status_msg), hl
 	.local	.LBB9_11
 .LBB9_11:
-	ld	b, 0
-	ld	a, b
+	xor	a, a
 	ld	(_tx_busy), a
-	jp	.LBB9_27
+	jp	.LBB9_22
 	.local	.LBB9_12
 .LBB9_12:
 	ld	de, _current_url
@@ -2223,7 +2225,7 @@ _rx_complete:                           ; @rx_complete
 	ld	de, (ix - 3)
 	add	hl, de
 	ld	(hl), 0
-	jp	.LBB9_26
+	jp	.LBB9_21
 	.local	.LBB9_13
 .LBB9_13:
 	ld.sis	bc, 2
@@ -2231,139 +2233,133 @@ _rx_complete:                           ; @rx_complete
 	ld	h, d
 	or	a, a
 	sbc.sis	hl, bc
-	jp	c, .LBB9_27
+	jp	c, .LBB9_23
 ; %bb.14:
-	ld	de, 1
+	ld	bc, 1
+	ld	hl, (-1900524)
+	ld	(ix - 12), hl
 	or	a, a
 	sbc	hl, hl
 	ex	de, hl
 	ld	e, iyl
 	ld	d, iyh
 	ex	de, hl
-	push	hl
-	pop	iy
+	ld	(ix - 9), hl
 	ld	hl, (_page_write_idx)
-	ld	(ix - 6), hl
-	sbc	hl, hl
 	ld	(ix - 3), hl
-	ld	(ix - 9), iy
+	sbc	hl, hl
+	ex	de, hl
 	.local	.LBB9_15
-.LBB9_15:                               ; =>This Loop Header: Depth=1
-                                        ;     Child Loop BB9_18 Depth 2
+.LBB9_15:                               ; =>This Inner Loop Header: Depth=1
 	ld	iy, _rx_pkt+8
 	lea	hl, iy + 0
-	ld	bc, (ix - 3)
-	add	hl, bc
-	ld	a, (hl)
-	add	iy, de
-	ld	(ix - 10), a                    ; 1-byte Folded Spill
-	or	a, a
-	jp	z, .LBB9_21
-; %bb.16:                               ;   in Loop: Header=BB9_15 Depth=1
-	ld	hl, (ix - 6)
-	ld	de, 76800
-	or	a, a
-	sbc	hl, de
-	jr	nc, .LBB9_21
-; %bb.17:                               ; %.preheader.preheader
-                                        ;   in Loop: Header=BB9_15 Depth=1
-	ld	a, (iy)
-	ld	(ix - 11), a
-	ld	a, (ix - 10)                    ; 1-byte Folded Reload
-	dec	a
-	ld	(ix - 3), bc
-	.local	.LBB9_18
-.LBB9_18:                               ; %.preheader
-                                        ;   Parent Loop BB9_15 Depth=1
-                                        ; =>  This Inner Loop Header: Depth=2
-	ld	hl, (ix - 6)
+	ld	(ix - 6), de
+	add	hl, de
+	ld	l, (hl)
 	ld	de, 0
-	ld	bc, -3355443
-	push	de
-	pop	iy
-	call	__i48mulu
-	ld	c, 24
-	call	__i48shru
-	ld	c, 8
-	call	__ishru
-	push	hl
-	pop	de
-	ld	bc, -320
-	call	__imulu
-	ld	bc, (ix - 6)
-	add	hl, bc
-	ld	(ix - 6), hl
-	ld	iy, (-1900524)
 	ex	de, hl
-	ld	bc, 320
-	call	__imulu
+	ld	iyl, e
 	ex	de, hl
-	add	iy, de
-	ld	de, (ix - 6)
-	add	iy, de
-	ld	l, (ix - 11)                    ; 1-byte Folded Reload
-	ld	(iy), l
-	ld	hl, (_page_write_idx)
-	inc	hl
-	ld	(_page_write_idx), hl
-	add	a, -1
-	ld	(ix - 6), hl
-	jr	nc, .LBB9_20
-; %bb.19:                               ; %.preheader
-                                        ;   in Loop: Header=BB9_18 Depth=2
-	ld	de, 76800
+	ld	e, l
+	ld	hl, (ix - 3)
+	add	hl, de
+	ld	de, 76801
 	or	a, a
 	sbc	hl, de
-	ld	bc, (ix - 3)
-	jr	c, .LBB9_18
-	jr	.LBB9_21
-	.local	.LBB9_20
-.LBB9_20:                               ;   in Loop: Header=BB9_15 Depth=1
-	ld	bc, (ix - 3)
-	.local	.LBB9_21
-.LBB9_21:                               ; %.loopexit
-                                        ;   in Loop: Header=BB9_15 Depth=1
+	jr	c, .LBB9_17
+; %bb.16:                               ;   in Loop: Header=BB9_15 Depth=1
+	ld	hl, (ix - 3)
+	sub	a, l
+	ld	iyl, a
+	.local	.LBB9_17
+.LBB9_17:                               ;   in Loop: Header=BB9_15 Depth=1
+	ld	a, iyl
+	or	a, a
+	ld	de, 0
+	jr	z, .LBB9_19
+; %bb.18:                               ;   in Loop: Header=BB9_15 Depth=1
+	ld	a, iyl
+	ld	hl, _rx_pkt+8
+	add	hl, bc
+	ld	l, (hl)
+	ex	de, hl
+	ld	iyl, e
+	ex	de, hl
+	ld	e, a
+	push	de
+	pop	bc
+	ld	(ix - 15), bc
+	ld	hl, (ix - 12)
+	ld	de, (ix - 3)
+	add	hl, de
 	push	bc
+	ld	e, iyl
+	push	de
+	push	hl
+	call	_memset
 	pop	hl
+	pop	hl
+	pop	hl
+	ld	hl, (_page_write_idx)
+	ld	de, (ix - 15)
+	add	hl, de
+	ld	(_page_write_idx), hl
+	ld	(ix - 3), hl
+	.local	.LBB9_19
+.LBB9_19:                               ;   in Loop: Header=BB9_15 Depth=1
+	xor	a, a
+	ld	hl, (ix - 6)
 	ld	de, 2
 	add	hl, de
 	ld	bc, 65535
 	call	__iand
-	ld	(ix - 3), hl
-	ex	de, hl
-	inc	de
-	push	de
+	push	hl
+	pop	iy
+	lea	bc, iy + 0
+	inc	bc
+	push	bc
 	pop	hl
-	ld	bc, (ix - 9)
+	ld	de, (ix - 9)
 	or	a, a
-	sbc	hl, bc
-	ld	b, 0
+	sbc	hl, de
+	lea	de, iy + 0
 	jp	c, .LBB9_15
-	jr	.LBB9_27
-	.local	.LBB9_22
-.LBB9_22:
+	jr	.LBB9_23
+	.local	.LBB9_20
+.LBB9_20:
 	ld	hl, _.str.19
 	ld	(_status_msg), hl
-	ld	b, 0
-	ld	l, a
-	ld	a, b
+	xor	a, a
 	ld	(_tx_busy), a
-	ld	a, l
+	.local	.LBB9_21
+.LBB9_21:                               ; %.loopexit
+	xor	a, a
 	ld	(_needs_blit), a
-	jr	.LBB9_27
+	.local	.LBB9_22
+.LBB9_22:                               ; %.loopexit
+	xor	a, a
 	.local	.LBB9_23
-.LBB9_23:
+.LBB9_23:                               ; %.loopexit
+	ld	(_rx_pending), a
+	call	_queue_rx
+	or	a, a
+	sbc	hl, hl
+	ld	sp, ix
+	pop	ix
+	ret
+	.local	.LBB9_24
+.LBB9_24:
 	ld	iy, _rx_pkt+8
 	ld.sis	bc, 39
 	ld	l, e
 	ld	h, d
 	or	a, a
 	sbc.sis	hl, bc
-	jr	c, .LBB9_25
-; %bb.24:
+	jr	c, .LBB9_26
+; %bb.25:
 	ld.sis	de, 39
-	.local	.LBB9_25
-.LBB9_25:
+	.local	.LBB9_26
+.LBB9_26:
 	or	a, a
 	sbc	hl, hl
 	ld	l, e
@@ -2384,21 +2380,9 @@ _rx_complete:                           ; @rx_complete
 	add	hl, de
 	ld	(hl), 0
 	ld	(_status_msg), bc
-	.local	.LBB9_26
-.LBB9_26:                               ; %.loopexit3
 	xor	a, a
 	ld	(_needs_blit), a
-	ld	b, a
-	.local	.LBB9_27
-.LBB9_27:                               ; %.loopexit3
-	ld	a, b
-	ld	(_rx_pending), a
-	call	_queue_rx
-	or	a, a
-	sbc	hl, hl
-	ld	sp, ix
-	pop	ix
-	ret
+	jr	.LBB9_23
 	.local	.Lfunc_end9
 .Lfunc_end9:
 	.size	_rx_complete, .Lfunc_end9-_rx_complete
@@ -2406,9 +2390,9 @@ _rx_complete:                           ; @rx_complete
 JTI9_0:
 	d24	.LBB9_10
 	d24	.LBB9_13
-	d24	.LBB9_22
+	d24	.LBB9_20
 	d24	.LBB9_12
-	d24	.LBB9_23
+	d24	.LBB9_24
 	d24	.LBB9_11
                                         ; -- End function
 	.section	.rodata._.str,"a",@progbits
@@ -2897,9 +2881,8 @@ _tx_pkt:
 	.extern	_strncpy
 	.extern	_gfx_FillRectangle
 	.extern	_llvm.smax.i24
-	.extern	_llvm.lifetime.end.p0
 	.extern	_memcpy
-	.extern	_llvm.uadd.with.overflow.i8
+	.extern	_llvm.lifetime.end.p0
 	.extern	__ishru
 	.extern	_llvm.eh.sjlj.lsda
 	.extern	_usb_GetDeviceEndpoint
@@ -2928,13 +2911,11 @@ _tx_pkt:
 	.extern	_llvm.eh.sjlj.setup.dispatch
 	.extern	_llvm.stacksave.p0
 	.extern	_llvm.lifetime.start.p0
-	.extern	__i48mulu
 	.extern	__frameset0
 	.extern	__Unwind_SjLj_Register
 	.extern	_llvm.umin.i16
-	.extern	__i48shru
-	.extern	_gfx_Rectangle
 	.extern	_llvm.frameaddress.p0
+	.extern	_gfx_Rectangle
 	.extern	__sshl
 	.extern	__sand
 	.extern	_llvm.stackrestore.p0

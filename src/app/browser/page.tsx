@@ -67,13 +67,18 @@ export default function BrowserPage() {
   const [inputUrl, setInputUrl] = useState("home");
   const [streaming, setStreaming] = useState(false);
   const [fps, setFps] = useState(0);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
 
   const deviceRef = useRef<UsbDevice | null>(null);
   const activeRef = useRef(false);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const offscreenCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
   const frameCountRef = useRef(0);
-  const streamingRef = useRef(false);
+  const sendingFrameRef = useRef(false);
+  const screenStreamRef = useRef<MediaStream | null>(null);
 
   // Send packet to Calculator
   const sendPacket = useCallback(async (type: number, seq: number, payload: Uint8Array) => {
@@ -126,17 +131,42 @@ export default function BrowserPage() {
     return new Uint8Array(spans);
   };
 
-  // Capture iframe and send frame over WebUSB
-  const captureAndStreamFrame = useCallback(async () => {
-    if (!iframeRef.current || !activeRef.current || streamingRef.current) return;
+  // Fast Stream RLE Data to Calculator over WebUSB without artificial sleep
+  const streamRLEToCalculator = useCallback(
+    async (rleData: Uint8Array) => {
+      const dev = deviceRef.current;
+      if (!dev || !dev.opened || sendingFrameRef.current) return;
+
+      sendingFrameRef.current = true;
+      try {
+        await sendPacket(PKT_FRAME_START, 0, new Uint8Array(0));
+
+        const chunkSize = 56;
+        const totalChunks = Math.ceil(rleData.length / chunkSize);
+
+        for (let i = 0; i < totalChunks; i++) {
+          const chunk = rleData.subarray(i * chunkSize, (i + 1) * chunkSize);
+          await sendPacket(PKT_FRAME_DATA, i & 0xff, chunk);
+        }
+
+        await sendPacket(PKT_FRAME_END, 0, new Uint8Array(0));
+        frameCountRef.current++;
+      } finally {
+        sendingFrameRef.current = false;
+      }
+    },
+    [sendPacket]
+  );
+
+  // Capture from HTML iframe
+  const captureAndStreamIframe = useCallback(async () => {
+    if (!iframeRef.current || !activeRef.current || sendingFrameRef.current) return;
 
     const iframe = iframeRef.current;
     const doc = iframe.contentDocument;
     if (!doc || !doc.body) return;
 
-    streamingRef.current = true;
     setStreaming(true);
-
     try {
       const canvas = await html2canvas(doc.body, {
         width: SCREEN_W,
@@ -148,43 +178,107 @@ export default function BrowserPage() {
         useCORS: true,
         allowTaint: false,
         backgroundColor: "#ffffff",
-        imageTimeout: 1500,
+        imageTimeout: 1000,
       });
 
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
       const imgData = ctx.getImageData(0, 0, SCREEN_W, SCREEN_H);
 
-      // Mirror to preview canvas on laptop UI
+      // Mirror to preview
       if (previewCanvasRef.current) {
         const prevCtx = previewCanvasRef.current.getContext("2d");
         prevCtx?.drawImage(canvas, 0, 0);
       }
 
-      // Convert to RGB332 & RLE Compress
       const rgb332 = quantizeToRGB332(imgData.data);
       const rleData = encodeRLE(rgb332);
-
-      // Send to Calculator
-      await sendPacket(PKT_FRAME_START, 0, new Uint8Array(0));
-
-      const chunkSize = 56;
-      for (let i = 0; i < rleData.length; i += chunkSize) {
-        const chunk = rleData.subarray(i, i + chunkSize);
-        await sendPacket(PKT_FRAME_DATA, (i / chunkSize) & 0xff, chunk);
-        await new Promise((r) => setTimeout(r, 4));
-      }
-
-      await sendPacket(PKT_FRAME_END, 0, new Uint8Array(0));
-
-      frameCountRef.current++;
+      await streamRLEToCalculator(rleData);
     } catch (e) {
       console.error("Frame capture error:", e);
     } finally {
-      streamingRef.current = false;
       setStreaming(false);
     }
-  }, [sendPacket]);
+  }, [streamRLEToCalculator]);
+
+  // Realtime Tab/Screen Capture Loop (30-60 FPS)
+  useEffect(() => {
+    let animId: number;
+    const renderLoop = async () => {
+      if (isScreenSharing && videoRef.current && activeRef.current && !sendingFrameRef.current) {
+        const video = videoRef.current;
+        if (video.readyState >= 2) {
+          if (!offscreenCanvasRef.current) {
+            offscreenCanvasRef.current = document.createElement("canvas");
+            offscreenCanvasRef.current.width = SCREEN_W;
+            offscreenCanvasRef.current.height = SCREEN_H;
+          }
+          const canvas = offscreenCanvasRef.current;
+          const ctx = canvas.getContext("2d", { willReadFrequently: true });
+          if (ctx) {
+            ctx.drawImage(video, 0, 0, SCREEN_W, SCREEN_H);
+            const imgData = ctx.getImageData(0, 0, SCREEN_W, SCREEN_H);
+
+            // Mirror to UI
+            if (previewCanvasRef.current) {
+              const prevCtx = previewCanvasRef.current.getContext("2d");
+              prevCtx?.drawImage(canvas, 0, 0);
+            }
+
+            const rgb332 = quantizeToRGB332(imgData.data);
+            const rle = encodeRLE(rgb332);
+            await streamRLEToCalculator(rle);
+          }
+        }
+      }
+      animId = requestAnimationFrame(renderLoop);
+    };
+
+    if (isScreenSharing) {
+      animId = requestAnimationFrame(renderLoop);
+    }
+
+    return () => {
+      if (animId) cancelAnimationFrame(animId);
+    };
+  }, [isScreenSharing, streamRLEToCalculator]);
+
+  // Start Realtime Tab / Screen Share
+  const startRealtimeTabShare = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: {
+          displaySurface: "browser",
+          frameRate: 30,
+        },
+      });
+
+      screenStreamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+
+      setIsScreenSharing(true);
+      setStatus("Realtime Tab Streaming Active (30 FPS)");
+
+      stream.getVideoTracks()[0].onended = () => {
+        setIsScreenSharing(false);
+        screenStreamRef.current = null;
+        setStatus("Connected · Iframe Mode");
+      };
+    } catch (err) {
+      console.warn("Screen share cancelled:", err);
+    }
+  };
+
+  const stopRealtimeTabShare = () => {
+    if (screenStreamRef.current) {
+      screenStreamRef.current.getTracks().forEach((t) => t.stop());
+      screenStreamRef.current = null;
+    }
+    setIsScreenSharing(false);
+  };
 
   // FPS ticker
   useEffect(() => {
@@ -206,30 +300,23 @@ export default function BrowserPage() {
         const x = payload[0] | (payload[1] << 8);
         const y = payload[2] | (payload[3] << 8);
 
-        // Account for 16px calculator chrome bar at top
         const webX = x;
         const webY = Math.max(0, y - 16);
-
-        console.log("[Calc Click]", { x, y, webX, webY });
 
         if (doc && iframe) {
           const el = doc.elementFromPoint(webX, webY);
           if (el) {
-            console.log("[Click Target]", el.tagName, (el as HTMLElement).innerText?.slice(0, 30));
             const a = el.closest("a");
             if (a && a.href) {
-              console.log("[Navigating Link]", a.href);
               iframe.src = a.href;
             } else {
-              // Dispatch realistic pointer click
               const evtInit = { bubbles: true, cancelable: true, clientX: webX, clientY: webY, view: win };
               el.dispatchEvent(new MouseEvent("mousedown", evtInit));
               el.dispatchEvent(new MouseEvent("mouseup", evtInit));
               el.dispatchEvent(new MouseEvent("click", evtInit));
               (el as HTMLElement).focus?.();
 
-              // Trigger frame update
-              setTimeout(() => void captureAndStreamFrame(), 200);
+              setTimeout(() => void captureAndStreamIframe(), 100);
             }
           }
         }
@@ -238,30 +325,29 @@ export default function BrowserPage() {
         const delta = view.getInt16(0, true);
         if (win) {
           win.scrollBy({ top: delta, behavior: "auto" });
-          setTimeout(() => void captureAndStreamFrame(), 50);
+          setTimeout(() => void captureAndStreamIframe(), 30);
         }
       } else if (type === PKT_NAV_URL) {
         const urlStr = new TextDecoder().decode(payload).replace(/\0/g, "").trim();
         if (urlStr && iframe) {
-          console.log("[Navigating URL]", urlStr);
           setCurrentUrl(urlStr);
           setInputUrl(urlStr);
           iframe.src = `/api/browser/proxy?url=${encodeURIComponent(urlStr)}`;
         }
       } else if (type === PKT_NAV_BACK) {
         win?.history.back();
-        setTimeout(() => void captureAndStreamFrame(), 300);
+        setTimeout(() => void captureAndStreamIframe(), 200);
       } else if (type === PKT_NAV_FORWARD) {
         win?.history.forward();
-        setTimeout(() => void captureAndStreamFrame(), 300);
+        setTimeout(() => void captureAndStreamIframe(), 200);
       } else if (type === PKT_NAV_RELOAD) {
         win?.location.reload();
-        setTimeout(() => void captureAndStreamFrame(), 300);
+        setTimeout(() => void captureAndStreamIframe(), 200);
       } else if (type === PKT_PING) {
         await sendPacket(PKT_PONG, 0, new Uint8Array(0));
       }
     },
-    [captureAndStreamFrame, sendPacket]
+    [captureAndStreamIframe, sendPacket]
   );
 
   // Connect WebUSB
@@ -311,7 +397,7 @@ export default function BrowserPage() {
       // Send initial URL and page frame
       const urlBytes = new TextEncoder().encode(currentUrl);
       await sendPacket(PKT_URL_UPDATE, 0, urlBytes);
-      setTimeout(() => void captureAndStreamFrame(), 600);
+      setTimeout(() => void captureAndStreamIframe(), 300);
 
       // Read loop on Endpoint 1 (Bulk IN)
       while (activeRef.current && device.opened) {
@@ -347,6 +433,7 @@ export default function BrowserPage() {
 
   const disconnect = async () => {
     activeRef.current = false;
+    stopRealtimeTabShare();
     if (deviceRef.current && deviceRef.current.opened) {
       try {
         await deviceRef.current.close();
@@ -478,9 +565,44 @@ export default function BrowserPage() {
         </div>
 
         <div style={{ display: "flex", gap: 10 }}>
+          {isScreenSharing ? (
+            <button
+              onClick={stopRealtimeTabShare}
+              style={{
+                background: "#ff8800",
+                color: "#1a0800",
+                border: "none",
+                borderRadius: 8,
+                padding: "10px 14px",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              ⏹ Stop 30 FPS Stream
+            </button>
+          ) : (
+            <button
+              onClick={startRealtimeTabShare}
+              disabled={!connected}
+              style={{
+                background: "#00ff88",
+                color: "#082012",
+                border: "none",
+                borderRadius: 8,
+                padding: "10px 14px",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: connected ? "pointer" : "not-allowed",
+              }}
+            >
+              🚀 Share Any Tab (Realtime 30 FPS)
+            </button>
+          )}
+
           <button
-            onClick={() => void captureAndStreamFrame()}
-            disabled={!connected || streaming}
+            onClick={() => void captureAndStreamIframe()}
+            disabled={!connected || streaming || isScreenSharing}
             style={{
               background: "#1e293b",
               border: "1px solid #334155",
@@ -491,7 +613,7 @@ export default function BrowserPage() {
               cursor: connected ? "pointer" : "not-allowed",
             }}
           >
-            🔄 Refresh Frame
+            🔄 Capture Page
           </button>
 
           <button
@@ -571,7 +693,7 @@ export default function BrowserPage() {
         <div style={{ background: "#080c10", border: "1px solid #1a2736", borderRadius: 12, padding: 16 }}>
           <div style={{ fontSize: 12, color: "#8b98ac", marginBottom: 10, display: "flex", justifyContent: "space-between" }}>
             <span>🌐 Browser Viewport (320×240)</span>
-            <span>{currentUrl}</span>
+            <span>{isScreenSharing ? "Tab Share Active" : currentUrl}</span>
           </div>
           <iframe
             ref={iframeRef}
@@ -581,9 +703,10 @@ export default function BrowserPage() {
                 const title = iframeRef.current?.contentDocument?.title || currentUrl;
                 void sendPacket(PKT_URL_UPDATE, 0, new TextEncoder().encode(title.slice(0, 30)));
               } catch {}
-              // Capture and stream multiple passes as assets load
-              setTimeout(() => void captureAndStreamFrame(), 200);
-              setTimeout(() => void captureAndStreamFrame(), 800);
+              if (!isScreenSharing) {
+                setTimeout(() => void captureAndStreamIframe(), 150);
+                setTimeout(() => void captureAndStreamIframe(), 600);
+              }
             }}
             style={{
               width: SCREEN_W,
@@ -591,7 +714,22 @@ export default function BrowserPage() {
               border: "1px solid #2a3547",
               borderRadius: 6,
               background: "#fff",
-              display: "block",
+              display: isScreenSharing ? "none" : "block",
+            }}
+          />
+          {/* Video element for realtime tab screen capture */}
+          <video
+            ref={videoRef}
+            playsInline
+            muted
+            style={{
+              width: SCREEN_W,
+              height: SCREEN_H,
+              border: "1px solid #00ff88",
+              borderRadius: 6,
+              background: "#000",
+              display: isScreenSharing ? "block" : "none",
+              objectFit: "contain",
             }}
           />
         </div>
@@ -600,7 +738,7 @@ export default function BrowserPage() {
         <div style={{ background: "#080c10", border: "1px solid #1a2736", borderRadius: 12, padding: 16 }}>
           <div style={{ fontSize: 12, color: "#00d8ff", marginBottom: 10, display: "flex", justifyContent: "space-between" }}>
             <span>📟 Calculator LCD Stream (RGB332 Palette)</span>
-            <span>{streaming ? "Streaming…" : "Idle"}</span>
+            <span>{fps > 0 ? `${fps} FPS` : streaming ? "Sending…" : "Idle"}</span>
           </div>
           <canvas
             ref={previewCanvasRef}
@@ -624,11 +762,12 @@ export default function BrowserPage() {
         <h3 style={{ color: "#edf2f7", fontSize: 16, margin: "0 0 10px" }}>Getting Started</h3>
         <ol style={{ paddingLeft: 20, margin: "0 0 16px" }}>
           <li>
-            Download <strong><a href="/downloads/BROWSER.8xp" download style={{ color: "#00d8ff" }}>BROWSER.8xp ↗</a></strong> and send it to your calculator using TI Connect CE.
+            Download <strong><a href="/downloads/BROWSER.8xp" download style={{ color: "#00d8ff" }}>BROWSER.8xp ↗</a></strong> (updated high-speed build) and send it to your calculator using TI Connect CE.
           </li>
           <li>Quit TI Connect CE (⌘Q) so the USB port is free.</li>
           <li>Run <code>prgmBROWSER</code> on your calculator.</li>
           <li>Click <strong>Connect Calculator</strong> above and select the device.</li>
+          <li>Click <strong>🚀 Share Any Tab (Realtime 30 FPS)</strong> to stream any browser tab with silky smooth 30 FPS real-time rendering!</li>
         </ol>
 
         <h4 style={{ color: "#edf2f7", fontSize: 14, margin: "0 0 8px" }}>Calculator Controls:</h4>

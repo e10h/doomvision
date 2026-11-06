@@ -66,152 +66,149 @@ Linker script and memory map
                 0x00d1a9af                ___exithl
                 0x00d1a9b0                _exit.sp
 
-.text           0x00d1a9eb     0x144b
+.text           0x00d1a9eb     0x131c
  *(.text.unlikely .text.*_unlikely .text.unlikely.*)
  *(.text.exit .text.exit.*)
  *(.text.startup .text.startup.*)
  *(.text.hot .text.hot.*)
  *(SORT_BY_NAME(.text.sorted.*))
  *(.text .stub .text.* .gnu.linkonce.t.*)
- .text          0x00d1a9eb      0x244 obj/BROWSER.o
+ .text          0x00d1a9eb      0x144 obj/BROWSER.o
                 0x00d1a9eb                __land
                 0x00d1a9ef                __iand
                 0x00d1aa06                __bshru
                 0x00d1aa10                __frameset
                 0x00d1aa1e                __frameset0
-                0x00d1aa29                __i48mulu
-                0x00d1aaf1                __i48shrs
-                0x00d1aaf6                __i48shru
-                0x00d1ab29                __imulu
-                0x00d1ab29                __imuls
-                0x00d1ab59                __sshl
-                0x00d1ab59                __ishl
-                0x00d1ab7f                __ishru
-                0x00d1ab84                __ishrs
-                0x00d1abc0                __sand
-                0x00d1abc9                __setflag
-                0x00d1abd3                __smulu
-                0x00d1abd3                __smuls
-                0x00d1abe6                __sor
-                0x00d1abef                _memcpy
-                0x00d1ac10                _memset
- .text._main    0x00d1ac2f      0x905 obj/BROWSER.o
-                0x00d1ac2f                _main
+                0x00d1aa29                __imulu
+                0x00d1aa29                __imuls
+                0x00d1aa59                __ishl
+                0x00d1aa59                __sshl
+                0x00d1aa7f                __ishru
+                0x00d1aa84                __ishrs
+                0x00d1aac0                __sand
+                0x00d1aac9                __setflag
+                0x00d1aad3                __smuls
+                0x00d1aad3                __smulu
+                0x00d1aae6                __sor
+                0x00d1aaef                _memcpy
+                0x00d1ab10                _memset
+ .text._main    0x00d1ab2f      0x905 obj/BROWSER.o
+                0x00d1ab2f                _main
  .text._draw_chrome_bar
-                0x00d1b534      0x254 obj/BROWSER.o
+                0x00d1b434      0x254 obj/BROWSER.o
  .text._draw_char
-                0x00d1b788       0xcc obj/BROWSER.o
+                0x00d1b688       0xcc obj/BROWSER.o
  .text._save_and_draw_cursor
-                0x00d1b854       0xd6 obj/BROWSER.o
+                0x00d1b754       0xd6 obj/BROWSER.o
  .text._usb_event
-                0x00d1b92a       0xc7 obj/BROWSER.o
+                0x00d1b82a       0xc7 obj/BROWSER.o
  .text._send_cmd
-                0x00d1b9f1       0xff obj/BROWSER.o
+                0x00d1b8f1       0xff obj/BROWSER.o
  .text._restore_cursor_bg
-                0x00d1baf0       0xbd obj/BROWSER.o
+                0x00d1b9f0       0xbd obj/BROWSER.o
  .text._tx_complete
-                0x00d1bbad        0xe obj/BROWSER.o
+                0x00d1baad        0xe obj/BROWSER.o
  .text._queue_rx
-                0x00d1bbbb       0x4b obj/BROWSER.o
+                0x00d1babb       0x4b obj/BROWSER.o
  .text._rx_complete
-                0x00d1bc06      0x230 obj/BROWSER.o
+                0x00d1bb06      0x201 obj/BROWSER.o
  *(.gnu.warning)
 
-.rodata         0x00d1be36      0x67e
+.rodata         0x00d1bd08      0x67e
  *(.rodata .rodata.* .gnu.linkonce.r.*)
- .rodata._main  0x00d1be36       0x12 obj/BROWSER.o
+ .rodata._main  0x00d1bd08       0x12 obj/BROWSER.o
  .rodata._rx_complete
-                0x00d1be48       0x12 obj/BROWSER.o
- .rodata._.str  0x00d1be5a       0x1c obj/BROWSER.o
+                0x00d1bd1a       0x12 obj/BROWSER.o
+ .rodata._.str  0x00d1bd2c       0x1c obj/BROWSER.o
  .rodata._.str.1
-                0x00d1be76       0x1f obj/BROWSER.o
+                0x00d1bd48       0x1f obj/BROWSER.o
  .rodata._.str.2
-                0x00d1be95       0x1c obj/BROWSER.o
+                0x00d1bd67       0x1c obj/BROWSER.o
  .rodata._.str.3
-                0x00d1beb1        0xa obj/BROWSER.o
+                0x00d1bd83        0xa obj/BROWSER.o
  .rodata._.str.4
-                0x00d1bebb       0x24 obj/BROWSER.o
+                0x00d1bd8d       0x24 obj/BROWSER.o
  .rodata._.str.5
-                0x00d1bedf       0x24 obj/BROWSER.o
+                0x00d1bdb1       0x24 obj/BROWSER.o
  .rodata._.str.6
-                0x00d1bf03       0x21 obj/BROWSER.o
+                0x00d1bdd5       0x21 obj/BROWSER.o
  .rodata._descriptors
-                0x00d1bf24        0xd obj/BROWSER.o
+                0x00d1bdf6        0xd obj/BROWSER.o
  .rodata._.str.7
-                0x00d1bf31       0x11 obj/BROWSER.o
+                0x00d1be03       0x11 obj/BROWSER.o
  .rodata._.str.8
-                0x00d1bf42        0xe obj/BROWSER.o
+                0x00d1be14        0xe obj/BROWSER.o
  .rodata._.str.9
-                0x00d1bf50        0x8 obj/BROWSER.o
+                0x00d1be22        0x8 obj/BROWSER.o
  .rodata._.str.10
-                0x00d1bf58        0xd obj/BROWSER.o
+                0x00d1be2a        0xd obj/BROWSER.o
  .rodata._.str.11
-                0x00d1bf65        0xe obj/BROWSER.o
+                0x00d1be37        0xe obj/BROWSER.o
  .rodata._.str.12
-                0x00d1bf73       0x11 obj/BROWSER.o
+                0x00d1be45       0x11 obj/BROWSER.o
  .rodata._.str.13
-                0x00d1bf84        0xd obj/BROWSER.o
+                0x00d1be56        0xd obj/BROWSER.o
  .rodata._.str.14
-                0x00d1bf91        0x5 obj/BROWSER.o
+                0x00d1be63        0x5 obj/BROWSER.o
  .rodata._font8x8_basic
-                0x00d1bf96      0x400 obj/BROWSER.o
+                0x00d1be68      0x400 obj/BROWSER.o
  .rodata._cursor_sprite
-                0x00d1c396       0x6c obj/BROWSER.o
+                0x00d1c268       0x6c obj/BROWSER.o
  .rodata._.str.16
-                0x00d1c402       0x18 obj/BROWSER.o
+                0x00d1c2d4       0x18 obj/BROWSER.o
  .rodata._.str.17
-                0x00d1c41a       0x16 obj/BROWSER.o
+                0x00d1c2ec       0x16 obj/BROWSER.o
  .rodata._.str.18
-                0x00d1c430       0x12 obj/BROWSER.o
+                0x00d1c302       0x12 obj/BROWSER.o
  .rodata._.str.19
-                0x00d1c442        0x6 obj/BROWSER.o
+                0x00d1c314        0x6 obj/BROWSER.o
  .rodata._configuration_bytes
-                0x00d1c448       0x20 obj/BROWSER.o
- .rodata._lang  0x00d1c468        0x4 obj/BROWSER.o
+                0x00d1c31a       0x20 obj/BROWSER.o
+ .rodata._lang  0x00d1c33a        0x4 obj/BROWSER.o
  .rodata._product
-                0x00d1c46c       0x26 obj/BROWSER.o
+                0x00d1c33e       0x26 obj/BROWSER.o
  .rodata.libload
-                0x00d1c492       0x22 obj/crt0.o
+                0x00d1c364       0x22 obj/crt0.o
 
-.init_array     0x00d1c4b4        0x0
+.init_array     0x00d1c386        0x0
                 [!provide]                        PROVIDE (__init_array_start = .)
  *(.preinit_array)
  *(SORT_BY_INIT_PRIORITY(.init_array.*))
  *(.init_array)
                 [!provide]                        PROVIDE (__init_array_end = .)
 
-.fini_array     0x00d1c4b4        0x0
+.fini_array     0x00d1c386        0x0
                 [!provide]                        PROVIDE (__fini_array_start = .)
  *(SORT_BY_INIT_PRIORITY(.fini_array.*))
  *(.fini_array)
                 [!provide]                        PROVIDE (__fini_array_end = .)
-                0x00d1c4b4                        ___data_low = .
+                0x00d1c386                        ___data_low = .
 
-.data           0x00d1c4b4       0x68
+.data           0x00d1c386       0x68
  *(.data .data.* .gnu.linkonce.d.*)
  .data._cursor_x
-                0x00d1c4b4        0x3 obj/BROWSER.o
+                0x00d1c386        0x3 obj/BROWSER.o
  .data._cursor_y
-                0x00d1c4b7        0x3 obj/BROWSER.o
+                0x00d1c389        0x3 obj/BROWSER.o
  .data._current_url
-                0x00d1c4ba       0x40 obj/BROWSER.o
+                0x00d1c38c       0x40 obj/BROWSER.o
  .data._status_msg
-                0x00d1c4fa        0x3 obj/BROWSER.o
+                0x00d1c3cc        0x3 obj/BROWSER.o
  .data._saved_x
-                0x00d1c4fd        0x3 obj/BROWSER.o
+                0x00d1c3cf        0x3 obj/BROWSER.o
  .data._saved_y
-                0x00d1c500        0x3 obj/BROWSER.o
- *fill*         0x00d1c503        0x1 
- .data._device  0x00d1c504       0x12 obj/BROWSER.o
+                0x00d1c3d2        0x3 obj/BROWSER.o
+ *fill*         0x00d1c3d5        0x1 
+ .data._device  0x00d1c3d6       0x12 obj/BROWSER.o
  .data._configs
-                0x00d1c516        0x3 obj/BROWSER.o
+                0x00d1c3e8        0x3 obj/BROWSER.o
  .data._strings
-                0x00d1c519        0x3 obj/BROWSER.o
+                0x00d1c3eb        0x3 obj/BROWSER.o
  *(.data1)
-                0x00d1c51c                        ___runprgm_reloc_start = .
+                0x00d1c3ee                        ___runprgm_reloc_start = .
  *(.runprgm.reloc)
-                0x00d1c51c                        ___runprgm_reloc_end = .
-                0x00d1c51c                        ___data_high = .
+                0x00d1c3ee                        ___runprgm_reloc_end = .
+                0x00d1c3ee                        ___data_high = .
                 0x00000068                        ___data_len = (___data_high - ___data_low)
                 0x00d052c6                        . = BSSHEAP_LOW
                 0x00d052c6                        ___bss_low = .
