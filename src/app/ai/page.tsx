@@ -663,7 +663,17 @@ export default function AiPage() {
           <li>Run <code>prgmCALCGPT</code> on your calculator.</li>
           <li>Unplug and reconnect the USB data cable once while the program is running.</li>
           <li>Click <strong>Connect Calculator</strong> above and select the device.</li>
-          <li>Press <strong>[ALPHA]</strong> to toggle letter/number typing, type your question, and press <strong>[ENTER]</strong>!</li>
+          <li>
+            Hold your calculator sideways (screen on right, keypad on left):
+            <div style={{ marginTop: 6, padding: "8px 12px", background: "#0a1318", border: "1px solid #1a2a30", borderRadius: 6, fontFamily: "monospace" }}>
+              • Top row (<code>[0]</code>..<code>[WINDOW]</code>): <code>Q</code> to <code>P</code><br />
+              • Mid row (<code>[.]</code>..<code>[DEL]</code>): <code>A</code> to <code>L</code><br />
+              • Bot row (<code>[(-)]</code>..<code>[VARS]</code>): <code>Z</code> to <code>M</code><br />
+              • Modifiers: <code>[+]</code> / <code>[ENTER]</code> = Shift, <code>[ZOOM]</code> = Delete, <code>[TRACE]</code> = Clear<br />
+              • Spacebar: <code>[-]</code>, <code>[×]</code>, <code>[÷]</code>, <code>[^]</code>, <code>[CLEAR]</code><br />
+              • Send: <code>[GRAPH]</code> | Exit: <code>[Y=]</code>
+            </div>
+          </li>
         </ol>
       </section>
     </main>

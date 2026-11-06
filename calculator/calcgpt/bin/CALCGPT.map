@@ -62,7 +62,7 @@ Linker script and memory map
                 0x00d1a98e                ___exithl
                 0x00d1a98f                _exit.sp
 
-.text           0x00d1a9ca     0x1366
+.text           0x00d1a9ca     0x1368
  *(.text.unlikely .text.*_unlikely .text.unlikely.*)
  *(.text.exit .text.exit.*)
  *(.text.startup .text.startup.*)
@@ -84,102 +84,101 @@ Linker script and memory map
                 0x00d1aa9f                _memcpy
                 0x00d1aac0                _memmove
                 0x00d1aaf0                _memset
- .text._main    0x00d1ab0f      0xb22 obj/CALCGPT.o
+ .text._main    0x00d1ab0f      0xb24 obj/CALCGPT.o
                 0x00d1ab0f                _main
  .text._append_chat_char
-                0x00d1b631      0x1ed obj/CALCGPT.o
+                0x00d1b633      0x1ed obj/CALCGPT.o
  .text._usb_event
-                0x00d1b81e       0xbe obj/CALCGPT.o
+                0x00d1b820       0xbe obj/CALCGPT.o
  .text._tx_complete
-                0x00d1b8dc        0xe obj/CALCGPT.o
+                0x00d1b8de        0xe obj/CALCGPT.o
  .text._draw_char_rot
-                0x00d1b8ea       0xcd obj/CALCGPT.o
+                0x00d1b8ec       0xcd obj/CALCGPT.o
  .text._queue_rx
-                0x00d1b9b7       0x4b obj/CALCGPT.o
+                0x00d1b9b9       0x4b obj/CALCGPT.o
  .text._rx_complete
-                0x00d1ba02      0x32e obj/CALCGPT.o
+                0x00d1ba04      0x32e obj/CALCGPT.o
  *(.gnu.warning)
 
-.rodata         0x00d1bd30      0x62c
+.rodata         0x00d1bd32      0x60a
  *(.rodata .rodata.* .gnu.linkonce.r.*)
- .rodata._main  0x00d1bd30       0x90 obj/CALCGPT.o
+ .rodata._main  0x00d1bd32       0x78 obj/CALCGPT.o
  .rodata._rx_complete
-                0x00d1bdc0        0xf obj/CALCGPT.o
- .rodata._.str  0x00d1bdcf       0x14 obj/CALCGPT.o
+                0x00d1bdaa        0xf obj/CALCGPT.o
+ .rodata._.str  0x00d1bdb9       0x14 obj/CALCGPT.o
  .rodata._.str.1
-                0x00d1bde3       0x19 obj/CALCGPT.o
+                0x00d1bdcd       0x19 obj/CALCGPT.o
  .rodata._.str.2
-                0x00d1bdfc       0x1b obj/CALCGPT.o
+                0x00d1bde6       0x15 obj/CALCGPT.o
  .rodata._.str.3
-                0x00d1be17       0x1f obj/CALCGPT.o
+                0x00d1bdfb       0x1c obj/CALCGPT.o
  .rodata._descriptors
-                0x00d1be36        0xd obj/CALCGPT.o
+                0x00d1be17        0xd obj/CALCGPT.o
  .rodata._.str.4
-                0x00d1be43       0x11 obj/CALCGPT.o
+                0x00d1be24       0x11 obj/CALCGPT.o
  .rodata._.str.5
-                0x00d1be54       0x12 obj/CALCGPT.o
+                0x00d1be35       0x12 obj/CALCGPT.o
  .rodata._.str.6
-                0x00d1be66       0x18 obj/CALCGPT.o
+                0x00d1be47       0x18 obj/CALCGPT.o
  .rodata._.str.7
-                0x00d1be7e       0x11 obj/CALCGPT.o
+                0x00d1be5f       0x11 obj/CALCGPT.o
  .rodata._.str.8
-                0x00d1be8f       0x14 obj/CALCGPT.o
+                0x00d1be70       0x14 obj/CALCGPT.o
  .rodata._.str.9
-                0x00d1bea3        0xf obj/CALCGPT.o
+                0x00d1be84        0xf obj/CALCGPT.o
  .rodata._.str.10
-                0x00d1beb2        0xd obj/CALCGPT.o
+                0x00d1be93        0xd obj/CALCGPT.o
  .rodata._configuration_bytes
-                0x00d1bebf       0x20 obj/CALCGPT.o
- *fill*         0x00d1bedf        0x1 
- .rodata._lang  0x00d1bee0        0x4 obj/CALCGPT.o
+                0x00d1bea0       0x20 obj/CALCGPT.o
+ .rodata._lang  0x00d1bec0        0x4 obj/CALCGPT.o
  .rodata._product
-                0x00d1bee4       0x20 obj/CALCGPT.o
+                0x00d1bec4       0x20 obj/CALCGPT.o
  .rodata._.str.13
-                0x00d1bf04        0x3 obj/CALCGPT.o
+                0x00d1bee4        0x3 obj/CALCGPT.o
  .rodata._.str.14
-                0x00d1bf07       0x12 obj/CALCGPT.o
+                0x00d1bee7       0x12 obj/CALCGPT.o
  .rodata._.str.15
-                0x00d1bf19        0xd obj/CALCGPT.o
+                0x00d1bef9        0xd obj/CALCGPT.o
  .rodata._.str.16
-                0x00d1bf26        0x8 obj/CALCGPT.o
+                0x00d1bf06        0x8 obj/CALCGPT.o
  .rodata._.str.18
-                0x00d1bf2e        0x6 obj/CALCGPT.o
+                0x00d1bf0e        0x6 obj/CALCGPT.o
  .rodata._.str.19
-                0x00d1bf34        0x6 obj/CALCGPT.o
+                0x00d1bf14        0x6 obj/CALCGPT.o
  .rodata._font8x8_basic
-                0x00d1bf3a      0x400 obj/CALCGPT.o
+                0x00d1bf1a      0x400 obj/CALCGPT.o
  .rodata.libload
-                0x00d1c33a       0x22 obj/crt0.o
+                0x00d1c31a       0x22 obj/crt0.o
 
-.init_array     0x00d1c35c        0x0
+.init_array     0x00d1c33c        0x0
                 [!provide]                        PROVIDE (__init_array_start = .)
  *(.preinit_array)
  *(SORT_BY_INIT_PRIORITY(.init_array.*))
  *(.init_array)
                 [!provide]                        PROVIDE (__init_array_end = .)
 
-.fini_array     0x00d1c35c        0x0
+.fini_array     0x00d1c33c        0x0
                 [!provide]                        PROVIDE (__fini_array_start = .)
  *(SORT_BY_INIT_PRIORITY(.fini_array.*))
  *(.fini_array)
                 [!provide]                        PROVIDE (__fini_array_end = .)
-                0x00d1c35c                        ___data_low = .
+                0x00d1c33c                        ___data_low = .
 
-.data           0x00d1c35c       0x1c
+.data           0x00d1c33c       0x1c
  *(.data .data.* .gnu.linkonce.d.*)
  .data._status_str
-                0x00d1c35c        0x3 obj/CALCGPT.o
- *fill*         0x00d1c35f        0x1 
- .data._device  0x00d1c360       0x12 obj/CALCGPT.o
+                0x00d1c33c        0x3 obj/CALCGPT.o
+ *fill*         0x00d1c33f        0x1 
+ .data._device  0x00d1c340       0x12 obj/CALCGPT.o
  .data._configs
-                0x00d1c372        0x3 obj/CALCGPT.o
+                0x00d1c352        0x3 obj/CALCGPT.o
  .data._strings
-                0x00d1c375        0x3 obj/CALCGPT.o
+                0x00d1c355        0x3 obj/CALCGPT.o
  *(.data1)
-                0x00d1c378                        ___runprgm_reloc_start = .
+                0x00d1c358                        ___runprgm_reloc_start = .
  *(.runprgm.reloc)
-                0x00d1c378                        ___runprgm_reloc_end = .
-                0x00d1c378                        ___data_high = .
+                0x00d1c358                        ___runprgm_reloc_end = .
+                0x00d1c358                        ___data_high = .
                 0x0000001c                        ___data_len = (___data_high - ___data_low)
                 0x00d052c6                        . = BSSHEAP_LOW
                 0x00d052c6                        ___bss_low = .

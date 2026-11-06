@@ -340,22 +340,21 @@ static void send_prompt(void) {
 
 /*
  * Sideways QWERTY Keypad Matrix Mapping:
- * Held 90 degrees CCW:
+ * Held 90 degrees CCW (Screen right, keypad left):
  * Top Row:    0 to window ==> Q to P
  * Middle Row: . to del    ==> A to L
  * Bottom Row: (-) to var  ==> Z to M
  * Control:
- *   [+]     ==> Shift toggle ([a] <-> [A])
- *   [^]     ==> Space
- *   [-]     ==> Backspace
- *   [CLEAR] ==> Clear line
- *   [ENTER] ==> Send message
- *   [*]     ==> '*'
- *   [/]     ==> '/'
- *   [MATH]  ==> '?'
- *   [x^-1]  ==> '.'
- *   [LOG]   ==> ','
- *   [LN]    ==> '\''
+ *   [+] / [ENTER]               ==> Shift toggle ([a] <-> [A])
+ *   [-], [*], [/], [^], [CLEAR] ==> Space
+ *   [ZOOM]                      ==> Backspace / Delete
+ *   [TRACE]                     ==> Clear line
+ *   [GRAPH]                     ==> Send message (Enter)
+ *   [Y=]                        ==> Exit to TI-OS
+ *   [MATH]                      ==> '?'
+ *   [x^-1]                      ==> '.'
+ *   [LOG]                       ==> ','
+ *   [LN]                        ==> '\''
  */
 static char map_qwerty_key(uint8_t key) {
     char ch = 0;
@@ -397,8 +396,6 @@ static char map_qwerty_key(uint8_t key) {
         case sk_Recip:    ch = '.'; break;
         case sk_Log:      ch = ','; break;
         case sk_Ln:       ch = '\''; break;
-        case sk_Mul:      ch = '*'; break;
-        case sk_Div:      ch = '/'; break;
 
         default: return 0;
     }
@@ -427,13 +424,13 @@ int main(void) {
     gfx_palette[6] = gfx_RGBTo1555(255, 80, 80);   /* 6: Red error text */
     gfx_palette[7] = gfx_RGBTo1555(240, 244, 248); /* 7: Pure White text */
 
-    append_chat_string("CalcGPT QWERTY v2.1", 3);
+    append_chat_string("CalcGPT QWERTY v2.2", 3);
     append_newline(3);
-    append_chat_string("Sideways layout: 240x320", 4);
+    append_chat_string("GRAPH:Send +/ENTER:Shift", 4);
     append_newline(4);
-    append_chat_string("+:Shift ^:Space ZOOM/-:Del", 4);
+    append_chat_string("ZOOM:Del TRACE:Clear", 4);
     append_newline(4);
-    append_chat_string("ENTER:Send CLEAR:Clear Y=:Exit", 4);
+    append_chat_string("-/x///^/CLEAR:Space Y=:Exit", 4);
     append_newline(4);
 
     /* Initialize USB in device mode */
@@ -455,26 +452,26 @@ int main(void) {
         key = os_GetCSC();
         if (key == sk_Yequ) {
             break; /* [Y=] quits to TI-OS */
-        } else if (key == sk_Add) {
-            shift_mode = !shift_mode; /* [+] toggles uppercase / lowercase */
-        } else if (key == sk_Sub || key == sk_Zoom) {
-            /* [ZOOM] and [-] are Backspace */
+        } else if (key == sk_Add || key == sk_Enter) {
+            shift_mode = !shift_mode; /* [+] and [ENTER] toggle uppercase / lowercase */
+        } else if (key == sk_Zoom) {
+            /* [ZOOM] is Backspace / Delete */
             if (input_len > 0) {
                 input_len--;
                 input_buf[input_len] = '\0';
             }
-        } else if (key == sk_Power) {
-            /* [^] is Space */
+        } else if (key == sk_Sub || key == sk_Mul || key == sk_Div || key == sk_Power || key == sk_Clear) {
+            /* [-], [*], [/], [^], [CLEAR] are Space */
             if (input_len < MAX_INPUT) {
                 input_buf[input_len++] = ' ';
                 input_buf[input_len] = '\0';
             }
-        } else if (key == sk_Clear) {
-            /* [CLEAR] clears line */
+        } else if (key == sk_Trace) {
+            /* [TRACE] clears line */
             input_len = 0;
             input_buf[0] = '\0';
-        } else if (key == sk_Enter) {
-            /* [ENTER] sends message */
+        } else if (key == sk_Graph) {
+            /* [GRAPH] sends message */
             send_prompt();
         } else if (key != 0) {
             char ch = map_qwerty_key(key);
