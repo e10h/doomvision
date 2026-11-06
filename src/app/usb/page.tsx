@@ -103,7 +103,13 @@ export default function UsbReceiver() {
     finally{setQualityBusy(false);}
   }
   return <main className={styles.page}>
-    <header className={styles.header}><Link href="/">doomvision</Link><span>USB AUDIO</span></header>
+    <header className={styles.header}>
+      <Link href="/">doomvision</Link>
+      <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+        <Link href="/ai" style={{ fontSize: 13, color: "#88efbe", textDecoration: "none", fontWeight: 600 }}>CalcGPT (AI) ↗</Link>
+        <span>USB AUDIO</span>
+      </div>
+    </header>
     <section className={styles.intro}><div className={styles.eyebrow}>CALCULATOR → SPEAKERS</div><h1>Hear your calculator.</h1><p>Run DVUSB6 or TI-Boy USB on your TI-84 Plus CE, plug it into your Mac, and connect.</p></section>
     <section className={styles.panel}>
       <div className={styles.toolbar}><span role="status"><i className={connected?styles.live:styles.dot}/>{status}</span><button onClick={connected?disconnect:connect} disabled={busy}>{busy?"Connecting…":connected?"Disconnect":"Connect calculator"}</button></div>

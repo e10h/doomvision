@@ -1,0 +1,334 @@
+
+Merging object attributes
+
+
+Discarded input sections
+
+ .comment       0x00000000       0x70 obj/CALCGPT.o
+ .note.GNU-stack
+                0x00000000        0x0 obj/CALCGPT.o
+ .init.weak_crt
+                0x00000000       0x10 obj/CALCGPT.o
+ .text          0x00000000        0x0 obj/crt0.o
+ .data          0x00000000        0x0 obj/crt0.o
+ .bss           0x00000000        0x0 obj/crt0.o
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+prgm             0x00d1a87f         0x00400000
+bss              0x00d052c6         0x0000ed12
+*default*        0x00000000         0xffffffff
+
+Linker script and memory map
+
+                0x00d1a87f                        LOAD_ADDR = 0xd1a87f
+                0x00d052c6                        BSSHEAP_LOW = 0xd052c6
+                0x00d13fd8                        BSSHEAP_HIGH = 0xd13fd8
+                0x00d1a87e                        STACK_HIGH = 0xd1a87e
+                0x00000001                        __TICE__ = 0x1
+                0x00d1a87f                        . = LOAD_ADDR
+
+.header         0x00d1a87f       0x21
+ *(.header)
+ .header        0x00d1a87f        0x3 obj/crt0.o
+ *(.header.icon)
+ .header.icon   0x00d1a882       0x1e obj/CALCGPT.o
+                0x00d1a887                ___description
+
+.init           0x00d1a8a0      0x136
+ *(.init)
+ .init          0x00d1a8a0      0x136 obj/crt0.o
+                0x00d1a8a0                __start
+                0x00d1a8fd                __libload_library_GRAPHX
+                0x00d1a906                _gfx_Begin
+                0x00d1a90a                _gfx_End
+                0x00d1a90e                _gfx_SetColor
+                0x00d1a912                _gfx_SetPalette
+                0x00d1a916                _gfx_FillScreen
+                0x00d1a91a                _gfx_SetDraw
+                0x00d1a91e                _gfx_Blit
+                0x00d1a922                _gfx_PrintChar
+                0x00d1a926                _gfx_PrintString
+                0x00d1a92a                _gfx_PrintStringXY
+                0x00d1a92e                _gfx_SetTextFGColor
+                0x00d1a932                _gfx_HorizLine
+                0x00d1a936                _gfx_FillRectangle
+                0x00d1a93a                __libload_library_USBDRVCE
+                0x00d1a945                _usb_Init
+                0x00d1a949                _usb_Cleanup
+                0x00d1a94d                _usb_HandleEvents
+                0x00d1a951                _usb_FindDevice
+                0x00d1a955                _usb_GetDeviceEndpoint
+                0x00d1a959                _usb_SetEndpointFlags
+                0x00d1a95d                _usb_ScheduleTransfer
+                0x00d1a99a                ___exithl
+                0x00d1a99b                _exit.sp
+
+.text           0x00d1a9d6      0xf21
+ *(.text.unlikely .text.*_unlikely .text.unlikely.*)
+ *(.text.exit .text.exit.*)
+ *(.text.startup .text.startup.*)
+ *(.text.hot .text.hot.*)
+ *(SORT_BY_NAME(.text.sorted.*))
+ *(.text .stub .text.* .gnu.linkonce.t.*)
+ .text          0x00d1a9d6      0x140 obj/CALCGPT.o
+                0x00d1a9d6                __land
+                0x00d1a9da                __iand
+                0x00d1a9f1                __frameset
+                0x00d1a9ff                __frameset0
+                0x00d1aa0a                __imulu
+                0x00d1aa0a                __imuls
+                0x00d1aa3a                __iremu
+                0x00d1aa41                __ishru
+                0x00d1aa46                __ishrs
+                0x00d1aa82                __setflag
+                0x00d1aa8c                __idvrmu
+                0x00d1aa90                __idvrmu.hijack_a_iters_ude_dividend
+                0x00d1aaa6                _memcpy
+                0x00d1aac7                _memmove
+                0x00d1aaf7                _memset
+ .text._main    0x00d1ab16      0x6e6 obj/CALCGPT.o
+                0x00d1ab16                _main
+ .text._append_chat_line
+                0x00d1b1fc       0x92 obj/CALCGPT.o
+ .text._usb_event
+                0x00d1b28e       0xbe obj/CALCGPT.o
+ .text._tx_complete
+                0x00d1b34c        0xe obj/CALCGPT.o
+ .text._queue_rx
+                0x00d1b35a       0x4b obj/CALCGPT.o
+ .text._rx_complete
+                0x00d1b3a5      0x37e obj/CALCGPT.o
+ .text._append_chat_char
+                0x00d1b723      0x1d4 obj/CALCGPT.o
+ *(.gnu.warning)
+
+.rodata         0x00d1b8f8      0x251
+ *(.rodata .rodata.* .gnu.linkonce.r.*)
+ .rodata._main  0x00d1b8f8       0xc3 obj/CALCGPT.o
+ .rodata._rx_complete
+                0x00d1b9bb        0xf obj/CALCGPT.o
+ .rodata._.str  0x00d1b9ca       0x14 obj/CALCGPT.o
+ .rodata._.str.1
+                0x00d1b9de       0x1b obj/CALCGPT.o
+ .rodata._.str.2
+                0x00d1b9f9       0x22 obj/CALCGPT.o
+ .rodata._descriptors
+                0x00d1ba1b        0xd obj/CALCGPT.o
+ .rodata._.str.3
+                0x00d1ba28       0x11 obj/CALCGPT.o
+ .rodata._.str.4
+                0x00d1ba39       0x12 obj/CALCGPT.o
+ .rodata._.str.5
+                0x00d1ba4b       0x18 obj/CALCGPT.o
+ .rodata._.str.6
+                0x00d1ba63       0x11 obj/CALCGPT.o
+ .rodata._.str.7
+                0x00d1ba74       0x14 obj/CALCGPT.o
+ .rodata._.str.8
+                0x00d1ba88        0xf obj/CALCGPT.o
+ .rodata._.str.9
+                0x00d1ba97        0xd obj/CALCGPT.o
+ .rodata._configuration_bytes
+                0x00d1baa4       0x20 obj/CALCGPT.o
+ .rodata._lang  0x00d1bac4        0x4 obj/CALCGPT.o
+ .rodata._product
+                0x00d1bac8       0x20 obj/CALCGPT.o
+ .rodata._.str.12
+                0x00d1bae8       0x12 obj/CALCGPT.o
+ .rodata._.str.13
+                0x00d1bafa        0xd obj/CALCGPT.o
+ .rodata._.str.14
+                0x00d1bb07        0x8 obj/CALCGPT.o
+ .rodata._.str.15
+                0x00d1bb0f        0x3 obj/CALCGPT.o
+ .rodata._.str.16
+                0x00d1bb12        0x7 obj/CALCGPT.o
+ .rodata._.str.17
+                0x00d1bb19        0x7 obj/CALCGPT.o
+ .rodata._.str.18
+                0x00d1bb20        0x7 obj/CALCGPT.o
+ .rodata.libload
+                0x00d1bb27       0x22 obj/crt0.o
+
+.init_array     0x00d1bb49        0x0
+                [!provide]                        PROVIDE (__init_array_start = .)
+ *(.preinit_array)
+ *(SORT_BY_INIT_PRIORITY(.init_array.*))
+ *(.init_array)
+                [!provide]                        PROVIDE (__init_array_end = .)
+
+.fini_array     0x00d1bb49        0x0
+                [!provide]                        PROVIDE (__fini_array_start = .)
+ *(SORT_BY_INIT_PRIORITY(.fini_array.*))
+ *(.fini_array)
+                [!provide]                        PROVIDE (__fini_array_end = .)
+                0x00d1bb49                        ___data_low = .
+
+.data           0x00d1bb4a       0x1c
+ *(.data .data.* .gnu.linkonce.d.*)
+ .data._status_str
+                0x00d1bb4a        0x3 obj/CALCGPT.o
+ *fill*         0x00d1bb4d        0x1 
+ .data._device  0x00d1bb4e       0x12 obj/CALCGPT.o
+ .data._configs
+                0x00d1bb60        0x3 obj/CALCGPT.o
+ .data._strings
+                0x00d1bb63        0x3 obj/CALCGPT.o
+ *(.data1)
+                0x00d1bb66                        ___runprgm_reloc_start = .
+ *(.runprgm.reloc)
+                0x00d1bb66                        ___runprgm_reloc_end = .
+                0x00d1bb66                        ___data_high = .
+                0x0000001d                        ___data_len = (___data_high - ___data_low)
+                0x00d052c6                        . = BSSHEAP_LOW
+                0x00d052c6                        ___bss_low = .
+
+.bss            0x00d052c6      0x4c1
+ *(.dynbss)
+ *(.bss .bss.* .gnu.linkonce.b.*)
+ .bss._typing_mode
+                0x00d052c6        0x3 obj/CALCGPT.o
+ .bss._input_len
+                0x00d052c9        0x3 obj/CALCGPT.o
+ .bss._input_buf
+                0x00d052cc       0x81 obj/CALCGPT.o
+ .bss._chat_count
+                0x00d0534d        0x3 obj/CALCGPT.o
+ .bss._chat     0x00d05350      0x3af obj/CALCGPT.o
+ .bss._ep_in    0x00d056ff        0x3 obj/CALCGPT.o
+ .bss._ep_out   0x00d05702        0x3 obj/CALCGPT.o
+ .bss._rx_pending
+                0x00d05705        0x1 obj/CALCGPT.o
+ .bss._rx_pkt   0x00d05706       0x40 obj/CALCGPT.o
+ .bss._tx_busy  0x00d05746        0x1 obj/CALCGPT.o
+ .bss._tx_pkt   0x00d05747       0x40 obj/CALCGPT.o
+ *(COMMON)
+                0x00d05787                        ___bss_high = .
+                0x000004c1                        ___bss_len = (___bss_high - ___bss_low)
+                0x00000001                        ASSERT ((. <= BSSHEAP_HIGH), Error: BSS exceed BSSHEAP_HIGH limit)
+                0x00d05787                        ___heap_low = .
+                0x00d13fd8                        . = BSSHEAP_HIGH
+                0x00d13fd8                        ___heap_high = .
+
+.runprgm
+ *(.runprgm.reloc)
+
+.debug_info
+ *(.debug_info .debug_info.*)
+
+.debug_abbrev
+ *(.debug_abbrev .debug_abbrev.*)
+
+.debug_line
+ *(.debug_line .debug_line.*)
+
+.debug_line_str
+ *(.debug_line_str .debug_line_str.*)
+
+.debug_str
+ *(.debug_str .debug_str.*)
+
+.debug_str_offsets
+ *(.debug_str_offsets .debug_str_offsets.*)
+
+.debug_addr
+ *(.debug_addr .debug_addr.*)
+
+.debug_aranges
+ *(.debug_aranges .debug_aranges.*)
+
+.debug_ranges
+ *(.debug_ranges .debug_ranges.*)
+
+.debug_rnglists
+ *(.debug_rnglists .debug_rnglists.*)
+
+.debug_loc
+ *(.debug_loc .debug_loc.*)
+
+.debug_loclists
+ *(.debug_loclists .debug_loclists.*)
+
+.debug_frame
+ *(.debug_frame .debug_frame.*)
+
+.debug_macro
+ *(.debug_macro .debug_macro.*)
+
+.debug_macinfo
+ *(.debug_macinfo .debug_macinfo.*)
+
+.debug_names
+ *(.debug_names .debug_names.*)
+
+.debug_pubnames
+ *(.debug_pubnames .debug_pubnames.*)
+
+.debug_pubtypes
+ *(.debug_pubtypes .debug_pubtypes.*)
+
+.debug_types
+ *(.debug_types .debug_types.*)
+
+.debug_sup
+ *(.debug_sup .debug_sup.*)
+
+.debug_cu_index
+ *(.debug_cu_index .debug_cu_index.*)
+
+.debug_tu_index
+ *(.debug_tu_index .debug_tu_index.*)
+
+.gdb_index
+ *(.gdb_index)
+
+.debug_gdb_scripts
+ *(.debug_gdb_scripts)
+
+.debug_abbrev.dwo
+ *(.debug_abbrev.dwo .debug_abbrev.dwo.*)
+
+.debug_info.dwo
+ *(.debug_info.dwo .debug_info.dwo.*)
+
+.debug_line.dwo
+ *(.debug_line.dwo .debug_line.dwo.*)
+
+.debug_loclists.dwo
+ *(.debug_loclists.dwo .debug_loclists.dwo.*)
+
+.debug_macro.dwo
+ *(.debug_macro.dwo .debug_macro.dwo.*)
+
+.debug_rnglists.dwo
+ *(.debug_rnglists.dwo .debug_rnglists.dwo.*)
+
+.debug_str.dwo
+ *(.debug_str.dwo .debug_str.dwo.*)
+
+.debug_str_offsets.dwo
+ *(.debug_str_offsets.dwo .debug_str_offsets.dwo.*)
+
+.eh_frame
+ *(.eh_frame)
+
+.eh_frame_hdr
+ *(.eh_frame_hdr)
+
+/DISCARD/
+ *(.comment)
+ *(.note*)
+                [!provide]                        PROVIDE (___runprgm_reloc_len = (___runprgm_reloc_end - ___runprgm_reloc_start))
+LOAD obj/CALCGPT.o
+LOAD obj/crt0.o
+START GROUP
+LOAD /Users/ethan/CEdev/lib/libc/allocator_standard.a
+LOAD /Users/ethan/CEdev/lib/crt/libcrt.a
+LOAD /Users/ethan/CEdev/lib/ce/libce.a
+LOAD /Users/ethan/CEdev/lib/softfloat/libsoftfloat.a
+LOAD /Users/ethan/CEdev/lib/libc/libc_os.a
+LOAD /Users/ethan/CEdev/lib/libcxx/libcxx.a
+END GROUP
+OUTPUT(bin/CALCGPT.obj elf32-z80)

@@ -465,8 +465,11 @@ export default function OpticalReceiverPage() {
 
   return (
     <div style={{ maxWidth: 1400, margin: "0 auto", padding: "24px 20px" }}>
-      <Link href="/usb" className="custom-btn" style={{ marginBottom: 20 }}>Connect calculator over USB →</Link>
-      <Link href="/optical" className="custom-btn" style={{ marginBottom: 20 }}>Six-color music transfer demo →</Link>
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 20 }}>
+        <Link href="/usb" className="custom-btn">Connect calculator over USB →</Link>
+        <Link href="/ai" className="custom-btn" style={{ borderColor: "#00ff88", color: "#00ff88" }}>CalcGPT (Gemini AI on Calculator) →</Link>
+        <Link href="/optical" className="custom-btn">Six-color music transfer demo →</Link>
+      </div>
       {/* Header */}
       <header className="receiver-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
         <div>
