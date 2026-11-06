@@ -6,8 +6,10 @@
 	.type	_main,@function
 _main:                                  ; @main
 ; %bb.0:
-	ld	hl, -52
+	ld	hl, -9
 	call	__frameset
+	ld	hl, _.str+1
+	ld	(ix - 3), hl
 	call	_gfx_Begin
 	ld	hl, 1
 	push	hl
@@ -59,27 +61,220 @@ _main:                                  ; @main
 	ld	iy, -1900018
 	ld	(iy), l
 	ld	(iy + 1), h
-	ld	hl, 3
+	ld	hl, 67
 	push	hl
-	ld	hl, _.str
-	push	hl
-	call	_append_chat_line
+	pop	bc
+	.local	.LBB0_1
+.LBB0_1:                                ; =>This Inner Loop Header: Depth=1
+	ld	de, 3
+	push	de
+	push	bc
+	call	_append_chat_char
 	pop	hl
 	pop	hl
+	ld	hl, (ix - 3)
+	ld	a, (hl)
+	ld	c, a
+	inc	hl
+	ld	(ix - 3), hl
+	or	a, a
+	jr	nz, .LBB0_1
+; %bb.2:
+	ld	bc, (_chat_count)
+	ld	de, 23
+	push	bc
+	pop	hl
+	or	a, a
+	sbc	hl, de
+	call	pe, __setflag
+	ld	iy, 1
+	push	bc
+	pop	hl
+	jp	m, .LBB0_4
+; %bb.3:
+	ld	hl, 902
+	push	hl
+	ld	hl, _chat+41
+	push	hl
+	ld	hl, _chat
+	push	hl
+	ld	(ix - 3), bc
+	call	_memmove
+	pop	hl
+	pop	hl
+	pop	hl
+	xor	a, a
+	ld	(_chat+902), a
+	ld	hl, _chat+902
+	push	hl
+	pop	de
+	inc	de
+	ld	bc, 40
+	ldir
+	ld	bc, (ix - 3)
+	ld	iy, -1
+	ld	hl, 22
+	.local	.LBB0_4
+.LBB0_4:
+	add	iy, bc
+	ld	(_chat_count), iy
+	ld	bc, 41
+	call	__imulu
+	ex	de, hl
+	ld	iy, _chat
+	add	iy, de
+	ld	(iy), b
+	ld	(ix - 3), iy
+	ld	hl, (ix - 3)
+	inc	hl
+	ld	(ix - 3), hl
+	ld	bc, 39
+	ld	de, (ix - 3)
+	lea	hl, iy + 0
+	ldir
+	ld	(iy + 40), 3
+	ld	de, 67
+	ld	hl, _.str.1+1
+	.local	.LBB0_5
+.LBB0_5:                                ; =>This Inner Loop Header: Depth=1
+	ld	(ix - 3), hl
 	ld	hl, 4
 	push	hl
-	ld	hl, _.str.1
+	push	de
+	call	_append_chat_char
+	pop	hl
+	pop	hl
+	ld	hl, (ix - 3)
+	ld	a, (hl)
+	ld	e, a
+	inc	hl
+	or	a, a
+	jr	nz, .LBB0_5
+; %bb.6:
+	ld	bc, (_chat_count)
+	push	bc
+	pop	hl
+	ld	de, 23
+	or	a, a
+	sbc	hl, de
+	call	pe, __setflag
+	ld	iy, 1
+	push	bc
+	pop	hl
+	jp	m, .LBB0_8
+; %bb.7:
+	ld	hl, 902
 	push	hl
-	call	_append_chat_line
+	ld	hl, _chat+41
+	push	hl
+	ld	hl, _chat
+	push	hl
+	ld	(ix - 3), bc
+	call	_memmove
 	pop	hl
 	pop	hl
+	pop	hl
+	xor	a, a
+	ld	(_chat+902), a
+	ld	hl, _chat+902
+	push	hl
+	pop	de
+	inc	de
+	ld	bc, 40
+	ldir
+	ld	bc, (ix - 3)
+	ld	iy, -1
+	ld	hl, 22
+	.local	.LBB0_8
+.LBB0_8:
+	add	iy, bc
+	ld	(_chat_count), iy
+	ld	bc, 41
+	call	__imulu
+	ex	de, hl
+	ld	iy, _chat
+	add	iy, de
+	ld	(iy), b
+	ld	(ix - 3), iy
+	ld	hl, (ix - 3)
+	inc	hl
+	ld	(ix - 3), hl
+	ld	bc, 39
+	ld	de, (ix - 3)
+	lea	hl, iy + 0
+	ldir
+	ld	(iy + 40), 4
+	ld	hl, _.str.2+1
+	ld	de, 65
+	.local	.LBB0_9
+.LBB0_9:                                ; =>This Inner Loop Header: Depth=1
+	ld	(ix - 3), hl
 	ld	hl, 4
 	push	hl
-	ld	hl, _.str.2
+	push	de
+	call	_append_chat_char
+	pop	hl
+	pop	hl
+	ld	hl, (ix - 3)
+	ld	a, (hl)
+	ld	e, a
+	inc	hl
+	or	a, a
+	jr	nz, .LBB0_9
+; %bb.10:
+	ld	bc, (_chat_count)
+	push	bc
+	pop	hl
+	ld	de, 23
+	or	a, a
+	sbc	hl, de
+	call	pe, __setflag
+	ld	iy, 1
+	push	bc
+	pop	hl
+	jp	m, .LBB0_12
+; %bb.11:
+	ld	hl, 902
 	push	hl
-	call	_append_chat_line
+	ld	hl, _chat+41
+	push	hl
+	ld	hl, _chat
+	push	hl
+	ld	(ix - 3), bc
+	call	_memmove
 	pop	hl
 	pop	hl
+	pop	hl
+	xor	a, a
+	ld	(_chat+902), a
+	ld	hl, _chat+902
+	push	hl
+	pop	de
+	inc	de
+	ld	bc, 40
+	ldir
+	ld	bc, (ix - 3)
+	ld	iy, -1
+	ld	hl, 22
+	.local	.LBB0_12
+.LBB0_12:
+	add	iy, bc
+	ld	(_chat_count), iy
+	ld	bc, 41
+	call	__imulu
+	ex	de, hl
+	ld	iy, _chat
+	add	iy, de
+	ld	(iy), b
+	ld	(ix - 3), iy
+	ld	hl, (ix - 3)
+	inc	hl
+	ld	(ix - 3), hl
+	ld	bc, 39
+	ld	de, (ix - 3)
+	lea	hl, iy + 0
+	ldir
+	ld	(iy + 40), 4
 	ld	hl, 36106
 	push	hl
 	ld	hl, _descriptors
@@ -97,64 +292,151 @@ _main:                                  ; @main
 	add	hl, bc
 	or	a, a
 	sbc	hl, bc
-	jp	nz, .LBB0_91
-; %bb.1:
-	lea	hl, ix - 40
-	ld	(ix - 52), hl
-	.local	.LBB0_2
-.LBB0_2:                                ; =>This Loop Header: Depth=1
-                                        ;     Child Loop BB0_35 Depth 2
+	jp	nz, .LBB0_109
+	.local	.LBB0_13
+.LBB0_13:                               ; %.preheader13
+                                        ; =>This Loop Header: Depth=1
+                                        ;     Child Loop BB0_20 Depth 2
+                                        ;     Child Loop BB0_23 Depth 2
+                                        ;     Child Loop BB0_53 Depth 2
 	call	_usb_HandleEvents
 	call	_os_GetCSC
 	ld	c, a
 	cp	a, 48
 	call	pe, __setflag
-	jp	p, .LBB0_15
-; %bb.3:                                ;   in Loop: Header=BB0_2 Depth=1
+	jp	p, .LBB0_33
+; %bb.14:                               ; %.preheader13
+                                        ;   in Loop: Header=BB0_13 Depth=1
 	or	a, a
-	jp	z, .LBB0_33
-; %bb.4:                                ;   in Loop: Header=BB0_2 Depth=1
+	jp	z, .LBB0_51
+; %bb.15:                               ; %.preheader13
+                                        ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, c
 	cp	a, 9
-	jp	nz, .LBB0_21
-; %bb.5:                                ;   in Loop: Header=BB0_2 Depth=1
+	jp	nz, .LBB0_39
+; %bb.16:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	hl, (_input_len)
 	add	hl, bc
 	or	a, a
 	sbc	hl, bc
-	jp	z, .LBB0_33
-; %bb.6:                                ;   in Loop: Header=BB0_2 Depth=1
+	jp	z, .LBB0_51
+; %bb.17:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	hl, (_ep_in)
 	add	hl, bc
 	or	a, a
 	sbc	hl, bc
-	jp	z, .LBB0_33
-; %bb.7:                                ;   in Loop: Header=BB0_2 Depth=1
+	jp	z, .LBB0_51
+; %bb.18:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, (_tx_busy)
 	bit	0, a
-	jp	nz, .LBB0_33
-; %bb.8:                                ;   in Loop: Header=BB0_2 Depth=1
-	ld	(ix - 40), 62
-	ld	(ix - 39), 32
-	ld	hl, 37
+	jp	nz, .LBB0_51
+; %bb.19:                               ; %.preheader12.preheader
+                                        ;   in Loop: Header=BB0_13 Depth=1
+	ld	hl, _.str.12+1
 	push	hl
-	ld	hl, _input_buf
+	pop	iy
+	ld	hl, 62
+	.local	.LBB0_20
+.LBB0_20:                               ; %.preheader12
+                                        ;   Parent Loop BB0_13 Depth=1
+                                        ; =>  This Inner Loop Header: Depth=2
+	ld	(ix - 3), iy
+	ld	de, 1
+	push	de
 	push	hl
-	ld	iy, (ix - 52)
-	pea	iy + 2
-	call	_strncpy
+	call	_append_chat_char
+	ld	iy, (ix - 3)
 	pop	hl
 	pop	hl
-	pop	hl
-	ld	(ix - 1), 0
-	ld	hl, 1
+	ld	a, (iy)
+	ld	l, a
+	inc	iy
+	or	a, a
+	jr	nz, .LBB0_20
+; %bb.21:                               ;   in Loop: Header=BB0_13 Depth=1
+	ld	a, (_input_buf)
+	ld	l, a
+	or	a, a
+	jr	z, .LBB0_24
+; %bb.22:                               ; %.preheader10.preheader
+                                        ;   in Loop: Header=BB0_13 Depth=1
+	ld	de, _input_buf+1
+	push	de
+	pop	iy
+	.local	.LBB0_23
+.LBB0_23:                               ; %.preheader10
+                                        ;   Parent Loop BB0_13 Depth=1
+                                        ; =>  This Inner Loop Header: Depth=2
+	ld	(ix - 3), iy
+	ld	de, 1
+	push	de
 	push	hl
-	ld	hl, (ix - 52)
+	call	_append_chat_char
+	ld	iy, (ix - 3)
+	pop	hl
+	pop	hl
+	ld	a, (iy)
+	ld	l, a
+	inc	iy
+	or	a, a
+	jr	nz, .LBB0_23
+	.local	.LBB0_24
+.LBB0_24:                               ; %.loopexit11
+                                        ;   in Loop: Header=BB0_13 Depth=1
+	ld	bc, (_chat_count)
+	push	bc
+	pop	hl
+	ld	de, 23
+	or	a, a
+	sbc	hl, de
+	call	pe, __setflag
+	ld	iy, 1
+	push	bc
+	pop	hl
+	jp	m, .LBB0_26
+; %bb.25:                               ;   in Loop: Header=BB0_13 Depth=1
+	ld	hl, 902
 	push	hl
-	call	_append_chat_line
+	ld	hl, _chat+41
+	push	hl
+	ld	hl, _chat
+	push	hl
+	ld	(ix - 3), bc
+	call	_memmove
 	pop	hl
 	pop	hl
-	ld	hl, _.str.12
+	pop	hl
+	xor	a, a
+	ld	(_chat+902), a
+	ld	hl, _chat+902
+	push	hl
+	pop	de
+	inc	de
+	ld	bc, 40
+	ldir
+	ld	bc, (ix - 3)
+	ld	iy, -1
+	ld	hl, 22
+	.local	.LBB0_26
+.LBB0_26:                               ;   in Loop: Header=BB0_13 Depth=1
+	add	iy, bc
+	ld	(_chat_count), iy
+	ld	bc, 41
+	call	__imulu
+	ex	de, hl
+	ld	hl, _chat
+	add	hl, de
+	ld	(hl), b
+	push	hl
+	pop	iy
+	inc	iy
+	lea	de, iy + 0
+	push	hl
+	pop	iy
+	ld	bc, 39
+	ldir
+	ld	(iy + 40), 2
+	ld	hl, _.str.13
 	ld	(_status_str), hl
 	ld	hl, _input_len
 	ld	bc, (hl)
@@ -177,12 +459,12 @@ _main:                                  ; @main
 	sbc.sis	hl, de
 	ld	e, c
 	ld	d, b
-	jr	c, .LBB0_10
-; %bb.9:                                ;   in Loop: Header=BB0_2 Depth=1
+	jr	c, .LBB0_28
+; %bb.27:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld.sis	hl, 56
 	ex.sis	de, hl
-	.local	.LBB0_10
-.LBB0_10:                               ;   in Loop: Header=BB0_2 Depth=1
+	.local	.LBB0_28
+.LBB0_28:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	hl, _tx_pkt+6
 	ld	(hl), e
 	inc	hl
@@ -194,28 +476,28 @@ _main:                                  ; @main
 	ex	de, hl
 	sbc.sis	hl, hl
 	adc.sis	hl, bc
-	jp	z, .LBB0_12
-; %bb.11:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	z, .LBB0_30
+; %bb.29:                               ;   in Loop: Header=BB0_13 Depth=1
 	push	de
 	ld	hl, _input_buf
 	push	hl
 	ld	hl, _tx_pkt+8
 	push	hl
-	ld	(ix - 46), bc
-	ld	(ix - 43), de
+	ld	(ix - 6), bc
+	ld	(ix - 3), de
 	call	_memcpy
 	pop	hl
 	pop	hl
 	pop	hl
-	ld	hl, (ix - 46)
+	ld	hl, (ix - 6)
                                         ; kill: def $hl killed $hl killed $uhl
 	ld.sis	de, 56
 	or	a, a
 	sbc.sis	hl, de
-	ld	de, (ix - 43)
-	jr	nc, .LBB0_13
-	.local	.LBB0_12
-.LBB0_12:                               ;   in Loop: Header=BB0_2 Depth=1
+	ld	de, (ix - 3)
+	jr	nc, .LBB0_31
+	.local	.LBB0_30
+.LBB0_30:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	iy, _tx_pkt+8
 	add	iy, de
 	ld	hl, 56
@@ -230,8 +512,8 @@ _main:                                  ; @main
 	pop	hl
 	pop	hl
 	pop	hl
-	.local	.LBB0_13
-.LBB0_13:                               ;   in Loop: Header=BB0_2 Depth=1
+	.local	.LBB0_31
+.LBB0_31:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, 1
 	ld	(_tx_busy), a
 	ld	hl, (_ep_in)
@@ -253,34 +535,37 @@ _main:                                  ; @main
 	add	hl, bc
 	or	a, a
 	sbc	hl, bc
-	jr	z, .LBB0_22
-; %bb.14:                               ;   in Loop: Header=BB0_2 Depth=1
+	jr	z, .LBB0_40
+; %bb.32:                               ;   in Loop: Header=BB0_13 Depth=1
 	xor	a, a
 	ld	(_tx_busy), a
-	ld	hl, _.str.13
+	ld	hl, _.str.14
 	ld	(_status_str), hl
-	jr	.LBB0_22
-	.local	.LBB0_15
-.LBB0_15:                               ;   in Loop: Header=BB0_2 Depth=1
+	jr	.LBB0_40
+	.local	.LBB0_33
+.LBB0_33:                               ; %.preheader13
+                                        ;   in Loop: Header=BB0_13 Depth=1
 	cp	a, 48
-	jr	nz, .LBB0_17
-; %bb.16:                               ;   in Loop: Header=BB0_2 Depth=1
+	jr	nz, .LBB0_35
+; %bb.34:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	hl, (_typing_mode)
 	inc	hl
 	ld	bc, 3
 	call	__iremu
 	ld	(_typing_mode), hl
-	jp	.LBB0_33
-	.local	.LBB0_17
-.LBB0_17:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_51
+	.local	.LBB0_35
+.LBB0_35:                               ; %.preheader13
+                                        ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, c
 	cp	a, 55
-	jp	z, .LBB0_94
-; %bb.18:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	z, .LBB0_112
+; %bb.36:                               ; %.preheader13
+                                        ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, c
 	cp	a, 56
-	jr	nz, .LBB0_23
-; %bb.19:                               ;   in Loop: Header=BB0_2 Depth=1
+	jr	nz, .LBB0_41
+; %bb.37:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	de, (_input_len)
 	push	de
 	pop	hl
@@ -288,36 +573,37 @@ _main:                                  ; @main
 	or	a, a
 	sbc	hl, bc
 	call	pe, __setflag
-	jp	m, .LBB0_33
-; %bb.20:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	m, .LBB0_51
+; %bb.38:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	iy, _input_buf
 	add	iy, de
 	dec	de
 	ld	(_input_len), de
 	ld	(iy - 1), 0
-	jp	.LBB0_33
-	.local	.LBB0_21
-.LBB0_21:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_51
+	.local	.LBB0_39
+.LBB0_39:                               ; %.preheader13
+                                        ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, c
 	cp	a, 15
-	jr	nz, .LBB0_23
-	.local	.LBB0_22
-.LBB0_22:                               ;   in Loop: Header=BB0_2 Depth=1
+	jr	nz, .LBB0_41
+	.local	.LBB0_40
+.LBB0_40:                               ;   in Loop: Header=BB0_13 Depth=1
 	or	a, a
 	sbc	hl, hl
 	ld	(_input_len), hl
 	xor	a, a
 	ld	(_input_buf), a
-	jp	.LBB0_33
-	.local	.LBB0_23
-.LBB0_23:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_51
+	.local	.LBB0_41
+.LBB0_41:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	iy, (_typing_mode)
 	lea	hl, iy + 0
 	ld	de, 2
 	or	a, a
 	sbc	hl, de
-	jr	nc, .LBB0_32
-; %bb.24:                               ;   in Loop: Header=BB0_2 Depth=1
+	jr	nc, .LBB0_50
+; %bb.42:                               ;   in Loop: Header=BB0_13 Depth=1
 	lea	de, iy + 0
 	ld	l, -11
 	ld	a, c
@@ -327,9 +613,9 @@ _main:                                  ; @main
 	ld	a, 0
 	ld	b, a
 	ld	c, a
-	jp	c, .LBB0_43
-	.local	.LBB0_25
-.LBB0_25:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	c, .LBB0_61
+	.local	.LBB0_43
+.LBB0_43:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	iyl, b
 	ld	b, a
 	ex	de, hl
@@ -337,11 +623,11 @@ _main:                                  ; @main
 	or	a, a
 	sbc	hl, de
 	ld	a, -1
-	jr	z, .LBB0_27
-; %bb.26:                               ;   in Loop: Header=BB0_2 Depth=1
+	jr	z, .LBB0_45
+; %bb.44:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, 0
-	.local	.LBB0_27
-.LBB0_27:                               ;   in Loop: Header=BB0_2 Depth=1
+	.local	.LBB0_45
+.LBB0_45:                               ;   in Loop: Header=BB0_13 Depth=1
 	and	a, b
 	ld	l, a
 	ld	e, iyl
@@ -349,18 +635,18 @@ _main:                                  ; @main
 	and	a, e
 	ld	l, a
 	bit	0, l
-	jr	z, .LBB0_29
-; %bb.28:                               ;   in Loop: Header=BB0_2 Depth=1
+	jr	z, .LBB0_47
+; %bb.46:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	l, 32
 	ld	a, c
 	add	a, l
 	ld	c, a
-	.local	.LBB0_29
-.LBB0_29:                               ;   in Loop: Header=BB0_2 Depth=1
+	.local	.LBB0_47
+.LBB0_47:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, c
 	or	a, a
-	jr	z, .LBB0_33
-; %bb.30:                               ;   in Loop: Header=BB0_2 Depth=1
+	jr	z, .LBB0_51
+; %bb.48:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	de, (_input_len)
 	push	de
 	pop	hl
@@ -369,25 +655,25 @@ _main:                                  ; @main
 	or	a, a
 	sbc	hl, bc
 	call	pe, __setflag
-	jp	p, .LBB0_33
-; %bb.31:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	p, .LBB0_51
+; %bb.49:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	iy, _input_buf
 	add	iy, de
 	inc	de
 	ld	(_input_len), de
 	ld	(iy), a
 	ld	(iy + 1), 0
-	jr	.LBB0_33
-	.local	.LBB0_32
-.LBB0_32:                               ;   in Loop: Header=BB0_2 Depth=1
+	jr	.LBB0_51
+	.local	.LBB0_50
+.LBB0_50:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	l, -10
 	ld	a, c
 	add	a, l
 	ld	l, a
 	cp	a, 28
-	jp	c, .LBB0_45
-	.local	.LBB0_33
-.LBB0_33:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	c, .LBB0_63
+	.local	.LBB0_51
+.LBB0_51:                               ;   in Loop: Header=BB0_13 Depth=1
 	or	a, a
 	sbc	hl, hl
 	push	hl
@@ -433,7 +719,7 @@ _main:                                  ; @main
 	push	hl
 	ld	hl, 6
 	push	hl
-	ld	hl, _.str.14
+	ld	hl, _.str.15
 	push	hl
 	call	_gfx_PrintStringXY
 	pop	hl
@@ -447,7 +733,7 @@ _main:                                  ; @main
 	push	hl
 	ld	hl, 72
 	push	hl
-	ld	hl, _.str.15
+	ld	hl, _.str.16
 	push	hl
 	call	_gfx_PrintStringXY
 	pop	hl
@@ -462,21 +748,21 @@ _main:                                  ; @main
 	or	a, a
 	sbc	hl, de
 	call	pe, __setflag
-	jp	m, .LBB0_38
-; %bb.34:                               ; %.preheader.preheader
-                                        ;   in Loop: Header=BB0_2 Depth=1
+	jp	m, .LBB0_56
+; %bb.52:                               ; %.preheader.preheader
+                                        ;   in Loop: Header=BB0_13 Depth=1
 	ld	hl, _chat
-	ld	(ix - 43), hl
+	ld	(ix - 3), hl
 	ld	hl, 22
-	ld	(ix - 46), hl
+	ld	(ix - 6), hl
 	ld	de, 0
-	.local	.LBB0_35
-.LBB0_35:                               ; %.preheader
-                                        ;   Parent Loop BB0_2 Depth=1
+	.local	.LBB0_53
+.LBB0_53:                               ; %.preheader
+                                        ;   Parent Loop BB0_13 Depth=1
                                         ; =>  This Inner Loop Header: Depth=2
-	ld	(ix - 49), de
-	ld	hl, (ix - 46)
-	ld	iy, (ix - 43)
+	ld	(ix - 9), de
+	ld	hl, (ix - 6)
+	ld	iy, (ix - 3)
 	ld	a, (iy + 40)
 	dec	a
 	or	a, a
@@ -491,48 +777,48 @@ _main:                                  ; @main
                                         ; kill: def $c killed $c killed $ubc
 	call	__ishru
 	cp	a, 3
-	jr	c, .LBB0_37
-; %bb.36:                               ; %.preheader
-                                        ;   in Loop: Header=BB0_35 Depth=2
+	jr	c, .LBB0_55
+; %bb.54:                               ; %.preheader
+                                        ;   in Loop: Header=BB0_53 Depth=2
 	ld	a, 7
 	ld	l, a
-	.local	.LBB0_37
-.LBB0_37:                               ; %.preheader
-                                        ;   in Loop: Header=BB0_35 Depth=2
+	.local	.LBB0_55
+.LBB0_55:                               ; %.preheader
+                                        ;   in Loop: Header=BB0_53 Depth=2
 	push	hl
 	call	_gfx_SetTextFGColor
 	pop	hl
-	ld	hl, (ix - 46)
+	ld	hl, (ix - 6)
 	push	hl
 	ld	hl, 6
 	push	hl
-	ld	hl, (ix - 43)
+	ld	hl, (ix - 3)
 	push	hl
 	call	_gfx_PrintStringXY
 	pop	hl
 	pop	hl
 	pop	hl
-	ld	hl, (ix - 49)
+	ld	hl, (ix - 9)
 	inc	hl
 	ld	bc, (_chat_count)
-	ld	(ix - 49), bc
+	ld	(ix - 9), bc
 	ld	bc, 8
-	ld	iy, (ix - 46)
+	ld	iy, (ix - 6)
 	add	iy, bc
-	ld	(ix - 46), iy
-	ld	iy, (ix - 43)
+	ld	(ix - 6), iy
+	ld	iy, (ix - 3)
 	lea	iy, iy + 41
-	ld	(ix - 43), iy
+	ld	(ix - 3), iy
 	push	hl
 	pop	de
-	ld	bc, (ix - 49)
+	ld	bc, (ix - 9)
 	or	a, a
 	sbc	hl, bc
 	call	pe, __setflag
-	jp	m, .LBB0_35
-	.local	.LBB0_38
-.LBB0_38:                               ; %.loopexit
-                                        ;   in Loop: Header=BB0_2 Depth=1
+	jp	m, .LBB0_53
+	.local	.LBB0_56
+.LBB0_56:                               ; %.loopexit
+                                        ;   in Loop: Header=BB0_13 Depth=1
 	ld	hl, 1
 	push	hl
 	call	_gfx_SetColor
@@ -576,28 +862,28 @@ _main:                                  ; @main
 	ld	bc, 1
 	or	a, a
 	sbc	hl, bc
-	ld	bc, _.str.17
-	jr	z, .LBB0_40
-; %bb.39:                               ; %.loopexit
-                                        ;   in Loop: Header=BB0_2 Depth=1
 	ld	bc, _.str.18
-	.local	.LBB0_40
-.LBB0_40:                               ; %.loopexit
-                                        ;   in Loop: Header=BB0_2 Depth=1
+	jr	z, .LBB0_58
+; %bb.57:                               ; %.loopexit
+                                        ;   in Loop: Header=BB0_13 Depth=1
+	ld	bc, _.str.19
+	.local	.LBB0_58
+.LBB0_58:                               ; %.loopexit
+                                        ;   in Loop: Header=BB0_13 Depth=1
 	sbc	hl, hl
 	adc	hl, de
-	ld	hl, _.str.16
-	ld	de, 6
-	jr	z, .LBB0_42
-; %bb.41:                               ; %.loopexit
-                                        ;   in Loop: Header=BB0_2 Depth=1
+	ld	hl, _.str.17
+	jr	z, .LBB0_60
+; %bb.59:                               ; %.loopexit
+                                        ;   in Loop: Header=BB0_13 Depth=1
 	push	bc
 	pop	hl
-	.local	.LBB0_42
-.LBB0_42:                               ; %.loopexit
-                                        ;   in Loop: Header=BB0_2 Depth=1
-	ld	bc, 226
-	push	bc
+	.local	.LBB0_60
+.LBB0_60:                               ; %.loopexit
+                                        ;   in Loop: Header=BB0_13 Depth=1
+	ld	de, 226
+	push	de
+	ld	de, 6
 	push	de
 	push	hl
 	call	_gfx_PrintStringXY
@@ -625,9 +911,9 @@ _main:                                  ; @main
 	push	hl
 	call	_gfx_Blit
 	pop	hl
-	jp	.LBB0_2
-	.local	.LBB0_43
-.LBB0_43:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_13
+	.local	.LBB0_61
+.LBB0_61:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	bc, 0
 	ld	c, l
 	ld	hl, JTI0_1
@@ -639,14 +925,14 @@ _main:                                  ; @main
 	ld	b, a
 	ld	c, a
 	jp	(hl)
-	.local	.LBB0_44
-.LBB0_44:                               ;   in Loop: Header=BB0_2 Depth=1
+	.local	.LBB0_62
+.LBB0_62:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, 1
 	ld	b, a
 	ld	c, 87
-	jp	.LBB0_25
-	.local	.LBB0_45
-.LBB0_45:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_43
+	.local	.LBB0_63
+.LBB0_63:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	de, 0
 	ld	e, l
 	ld	hl, JTI0_0
@@ -656,244 +942,244 @@ _main:                                  ; @main
 	ld	hl, (hl)
 	ld	c, 48
 	jp	(hl)
-	.local	.LBB0_46
-.LBB0_46:                               ;   in Loop: Header=BB0_2 Depth=1
+	.local	.LBB0_64
+.LBB0_64:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	c, 43
-	jp	.LBB0_29
-	.local	.LBB0_47
-.LBB0_47:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_47
+	.local	.LBB0_65
+.LBB0_65:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	c, 52
-	jp	.LBB0_29
-	.local	.LBB0_48
-.LBB0_48:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_47
+	.local	.LBB0_66
+.LBB0_66:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	c, 40
-	jp	.LBB0_29
-	.local	.LBB0_49
-.LBB0_49:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_47
+	.local	.LBB0_67
+.LBB0_67:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	c, 50
-	jp	.LBB0_29
-	.local	.LBB0_50
-.LBB0_50:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_47
+	.local	.LBB0_68
+.LBB0_68:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	c, 42
-	jp	.LBB0_29
-	.local	.LBB0_51
-.LBB0_51:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_47
+	.local	.LBB0_69
+.LBB0_69:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	c, 53
-	jp	.LBB0_29
-	.local	.LBB0_52
-.LBB0_52:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_47
+	.local	.LBB0_70
+.LBB0_70:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	c, 41
-	jp	.LBB0_29
-	.local	.LBB0_53
-.LBB0_53:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_47
+	.local	.LBB0_71
+.LBB0_71:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	c, 49
-	jp	.LBB0_29
-	.local	.LBB0_54
-.LBB0_54:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_47
+	.local	.LBB0_72
+.LBB0_72:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	c, 45
-	jp	.LBB0_29
-	.local	.LBB0_55
-.LBB0_55:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_47
+	.local	.LBB0_73
+.LBB0_73:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	c, 54
-	jp	.LBB0_29
-	.local	.LBB0_56
-.LBB0_56:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_47
+	.local	.LBB0_74
+.LBB0_74:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	c, 55
-	jp	.LBB0_29
-	.local	.LBB0_57
-.LBB0_57:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_47
+	.local	.LBB0_75
+.LBB0_75:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	c, 47
-	jp	.LBB0_29
-	.local	.LBB0_58
-.LBB0_58:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_47
+	.local	.LBB0_76
+.LBB0_76:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	c, 56
-	jp	.LBB0_29
-	.local	.LBB0_59
-.LBB0_59:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_47
+	.local	.LBB0_77
+.LBB0_77:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	c, 51
-	jp	.LBB0_29
-	.local	.LBB0_60
-.LBB0_60:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_47
+	.local	.LBB0_78
+.LBB0_78:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	c, 44
-	jp	.LBB0_29
-	.local	.LBB0_61
-.LBB0_61:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_47
+	.local	.LBB0_79
+.LBB0_79:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	c, 46
-	jp	.LBB0_29
-	.local	.LBB0_62
-.LBB0_62:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_47
+	.local	.LBB0_80
+.LBB0_80:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	c, 57
-	jp	.LBB0_29
-	.local	.LBB0_63
-.LBB0_63:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_47
+	.local	.LBB0_81
+.LBB0_81:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, 1
 	ld	b, a
 	ld	c, 73
-	jp	.LBB0_25
-	.local	.LBB0_64
-.LBB0_64:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_43
+	.local	.LBB0_82
+.LBB0_82:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, 1
 	ld	b, a
 	ld	c, 67
-	jp	.LBB0_25
-	.local	.LBB0_65
-.LBB0_65:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_43
+	.local	.LBB0_83
+.LBB0_83:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, 1
 	ld	b, a
 	ld	c, 75
-	jp	.LBB0_25
-	.local	.LBB0_66
-.LBB0_66:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_43
+	.local	.LBB0_84
+.LBB0_84:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, 1
 	ld	b, a
 	ld	c, 90
-	jp	.LBB0_25
-	.local	.LBB0_67
-.LBB0_67:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_43
+	.local	.LBB0_85
+.LBB0_85:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, 1
 	ld	b, a
 	ld	c, 72
-	jp	.LBB0_25
-	.local	.LBB0_68
-.LBB0_68:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_43
+	.local	.LBB0_86
+.LBB0_86:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, 1
 	ld	b, a
 	ld	c, 85
-	jp	.LBB0_25
-	.local	.LBB0_69
-.LBB0_69:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_43
+	.local	.LBB0_87
+.LBB0_87:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, 1
 	ld	b, a
 	ld	c, 71
-	jp	.LBB0_25
-	.local	.LBB0_70
-.LBB0_70:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_43
+	.local	.LBB0_88
+.LBB0_88:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, 1
 	ld	b, a
 	ld	c, 83
-	jp	.LBB0_25
-	.local	.LBB0_71
-.LBB0_71:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_43
+	.local	.LBB0_89
+.LBB0_89:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, 1
 	ld	b, a
 	ld	c, 88
-	jp	.LBB0_25
-	.local	.LBB0_72
-.LBB0_72:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_43
+	.local	.LBB0_90
+.LBB0_90:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, 1
 	ld	b, a
 	ld	c, 82
-	jp	.LBB0_25
-	.local	.LBB0_73
-.LBB0_73:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_43
+	.local	.LBB0_91
+.LBB0_91:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, 1
 	ld	b, a
 	ld	c, 70
-	jp	.LBB0_25
-	.local	.LBB0_74
-.LBB0_74:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_43
+	.local	.LBB0_92
+.LBB0_92:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, 1
 	ld	b, a
 	ld	c, 77
-	jp	.LBB0_25
-	.local	.LBB0_75
-.LBB0_75:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_43
+	.local	.LBB0_93
+.LBB0_93:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, 1
 	ld	b, a
 	ld	c, 81
-	jp	.LBB0_25
-	.local	.LBB0_76
-.LBB0_76:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_43
+	.local	.LBB0_94
+.LBB0_94:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, 1
 	ld	b, 0
 	ld	c, 32
-	jp	.LBB0_25
-	.local	.LBB0_77
-.LBB0_77:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_43
+	.local	.LBB0_95
+.LBB0_95:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, 1
 	ld	b, a
 	ld	c, 79
-	jp	.LBB0_25
-	.local	.LBB0_78
-.LBB0_78:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_43
+	.local	.LBB0_96
+.LBB0_96:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, 1
 	ld	b, 0
 	ld	c, 63
-	jp	.LBB0_25
-	.local	.LBB0_79
-.LBB0_79:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_43
+	.local	.LBB0_97
+.LBB0_97:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, 1
 	ld	b, a
 	ld	c, 74
-	jp	.LBB0_25
-	.local	.LBB0_80
-.LBB0_80:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_43
+	.local	.LBB0_98
+.LBB0_98:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, 1
 	ld	b, a
 	ld	c, 80
-	jp	.LBB0_25
-	.local	.LBB0_81
-.LBB0_81:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_43
+	.local	.LBB0_99
+.LBB0_99:                               ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, 1
 	ld	b, a
 	ld	c, 86
-	jp	.LBB0_25
-	.local	.LBB0_82
-.LBB0_82:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_43
+	.local	.LBB0_100
+.LBB0_100:                              ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, 1
 	ld	b, a
 	ld	c, 89
-	jp	.LBB0_25
-	.local	.LBB0_83
-.LBB0_83:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_43
+	.local	.LBB0_101
+.LBB0_101:                              ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, 1
 	ld	b, 0
 	ld	c, 46
-	jp	.LBB0_25
-	.local	.LBB0_84
-.LBB0_84:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_43
+	.local	.LBB0_102
+.LBB0_102:                              ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, 1
 	ld	b, a
 	ld	c, 76
-	jp	.LBB0_25
-	.local	.LBB0_85
-.LBB0_85:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_43
+	.local	.LBB0_103
+.LBB0_103:                              ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, 1
 	ld	b, a
 	ld	c, 69
-	jp	.LBB0_25
-	.local	.LBB0_86
-.LBB0_86:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_43
+	.local	.LBB0_104
+.LBB0_104:                              ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, 1
 	ld	b, a
 	ld	c, 84
-	jp	.LBB0_25
-	.local	.LBB0_87
-.LBB0_87:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_43
+	.local	.LBB0_105
+.LBB0_105:                              ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, 1
 	ld	b, a
 	ld	c, 66
-	jp	.LBB0_25
-	.local	.LBB0_88
-.LBB0_88:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_43
+	.local	.LBB0_106
+.LBB0_106:                              ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, 1
 	ld	b, a
 	ld	c, 68
-	jp	.LBB0_25
-	.local	.LBB0_89
-.LBB0_89:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_43
+	.local	.LBB0_107
+.LBB0_107:                              ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, 1
 	ld	b, a
 	ld	c, 65
-	jp	.LBB0_25
-	.local	.LBB0_90
-.LBB0_90:                               ;   in Loop: Header=BB0_2 Depth=1
+	jp	.LBB0_43
+	.local	.LBB0_108
+.LBB0_108:                              ;   in Loop: Header=BB0_13 Depth=1
 	ld	a, 1
 	ld	b, a
 	ld	c, 78
-	jp	.LBB0_25
-	.local	.LBB0_91
-.LBB0_91:
+	jp	.LBB0_43
+	.local	.LBB0_109
+.LBB0_109:
 	or	a, a
 	sbc	hl, hl
 	push	hl
@@ -916,23 +1202,24 @@ _main:                                  ; @main
 	push	hl
 	call	_gfx_Blit
 	pop	hl
-	.local	.LBB0_92
-.LBB0_92:                               ; =>This Inner Loop Header: Depth=1
+	.local	.LBB0_110
+.LBB0_110:                              ; =>This Inner Loop Header: Depth=1
 	call	_os_GetCSC
 	or	a, a
-	jr	z, .LBB0_92
-; %bb.93:
-	call	_gfx_End
+	jr	z, .LBB0_110
+; %bb.111:
 	ld	hl, 1
-	jr	.LBB0_95
-	.local	.LBB0_94
-.LBB0_94:
+	jr	.LBB0_113
+	.local	.LBB0_112
+.LBB0_112:
 	call	_usb_Cleanup
-	call	_gfx_End
 	or	a, a
 	sbc	hl, hl
-	.local	.LBB0_95
-.LBB0_95:
+	.local	.LBB0_113
+.LBB0_113:                              ; %.loopexit14
+	ld	(ix - 3), hl
+	call	_gfx_End
+	ld	hl, (ix - 3)
 	ld	sp, ix
 	pop	ix
 	ret
@@ -941,96 +1228,138 @@ _main:                                  ; @main
 	.size	_main, .Lfunc_end0-_main
 	.section	.rodata._main,"a",@progbits
 JTI0_0:
-	d24	.LBB0_46
-	d24	.LBB0_54
-	d24	.LBB0_50
-	d24	.LBB0_57
-	d24	.LBB0_33
-	d24	.LBB0_33
-	d24	.LBB0_33
-	d24	.LBB0_33
-	d24	.LBB0_59
-	d24	.LBB0_55
-	d24	.LBB0_62
-	d24	.LBB0_52
-	d24	.LBB0_33
-	d24	.LBB0_33
-	d24	.LBB0_33
-	d24	.LBB0_61
-	d24	.LBB0_49
-	d24	.LBB0_51
-	d24	.LBB0_58
-	d24	.LBB0_48
-	d24	.LBB0_33
-	d24	.LBB0_33
-	d24	.LBB0_33
-	d24	.LBB0_29
-	d24	.LBB0_53
-	d24	.LBB0_47
-	d24	.LBB0_56
-	d24	.LBB0_60
-JTI0_1:
-	d24	.LBB0_44
-	d24	.LBB0_72
-	d24	.LBB0_74
-	d24	.LBB0_67
-	d24	.LBB0_25
-	d24	.LBB0_25
-	d24	.LBB0_78
-	d24	.LBB0_25
-	d24	.LBB0_81
-	d24	.LBB0_75
-	d24	.LBB0_84
-	d24	.LBB0_69
-	d24	.LBB0_25
-	d24	.LBB0_25
-	d24	.LBB0_83
-	d24	.LBB0_66
-	d24	.LBB0_68
-	d24	.LBB0_80
-	d24	.LBB0_65
-	d24	.LBB0_73
 	d24	.LBB0_64
-	d24	.LBB0_25
-	d24	.LBB0_76
-	d24	.LBB0_82
-	d24	.LBB0_86
+	d24	.LBB0_72
+	d24	.LBB0_68
+	d24	.LBB0_75
+	d24	.LBB0_51
+	d24	.LBB0_51
+	d24	.LBB0_51
+	d24	.LBB0_51
 	d24	.LBB0_77
-	d24	.LBB0_79
-	d24	.LBB0_85
-	d24	.LBB0_87
-	d24	.LBB0_25
-	d24	.LBB0_25
-	d24	.LBB0_71
+	d24	.LBB0_73
+	d24	.LBB0_80
 	d24	.LBB0_70
+	d24	.LBB0_51
+	d24	.LBB0_51
+	d24	.LBB0_51
+	d24	.LBB0_79
+	d24	.LBB0_67
+	d24	.LBB0_69
+	d24	.LBB0_76
+	d24	.LBB0_66
+	d24	.LBB0_51
+	d24	.LBB0_51
+	d24	.LBB0_51
+	d24	.LBB0_47
+	d24	.LBB0_71
+	d24	.LBB0_65
+	d24	.LBB0_74
+	d24	.LBB0_78
+JTI0_1:
+	d24	.LBB0_62
 	d24	.LBB0_90
-	d24	.LBB0_63
-	d24	.LBB0_88
+	d24	.LBB0_92
+	d24	.LBB0_85
+	d24	.LBB0_43
+	d24	.LBB0_43
+	d24	.LBB0_96
+	d24	.LBB0_43
+	d24	.LBB0_99
+	d24	.LBB0_93
+	d24	.LBB0_102
+	d24	.LBB0_87
+	d24	.LBB0_43
+	d24	.LBB0_43
+	d24	.LBB0_101
+	d24	.LBB0_84
+	d24	.LBB0_86
+	d24	.LBB0_98
+	d24	.LBB0_83
+	d24	.LBB0_91
+	d24	.LBB0_82
+	d24	.LBB0_43
+	d24	.LBB0_94
+	d24	.LBB0_100
+	d24	.LBB0_104
+	d24	.LBB0_95
+	d24	.LBB0_97
+	d24	.LBB0_103
+	d24	.LBB0_105
+	d24	.LBB0_43
+	d24	.LBB0_43
 	d24	.LBB0_89
+	d24	.LBB0_88
+	d24	.LBB0_108
+	d24	.LBB0_81
+	d24	.LBB0_106
+	d24	.LBB0_107
                                         ; -- End function
-	.section	.text._append_chat_line,"ax",@progbits
-	.type	_append_chat_line,@function     ; -- Begin function append_chat_line
-_append_chat_line:                      ; @append_chat_line
+	.section	.text._append_chat_char,"ax",@progbits
+	.type	_append_chat_char,@function     ; -- Begin function append_chat_char
+_append_chat_char:                      ; @append_chat_char
 ; %bb.0:
-	ld	hl, -6
+	ld	hl, -9
 	call	__frameset
-	ld	iy, (_chat_count)
-	ld	de, 23
+	ld	e, (ix + 6)
+	ld	iy, _chat
+	xor	a, a
+	ld	hl, (_chat_count)
+	push	hl
+	pop	bc
+	add	hl, bc
+	or	a, a
+	sbc	hl, bc
+	jr	nz, .LBB1_3
+; %bb.1:
+	ld	hl, 1
+	ld	(_chat_count), hl
+	ld	(_chat), a
 	lea	hl, iy + 0
+	inc	hl
+	ld	bc, 39
+	ld	a, e
+	ex	de, hl
+	lea	hl, iy + 0
+	ldir
+	ld	l, a
+	ld	a, (ix + 9)
+	ld	(_chat+40), a
+	ld	a, l
+	cp	a, 10
+	ld	bc, 1
+	jr	nz, .LBB1_6
+; %bb.2:
+	ld	hl, 1
+	push	hl
+	pop	bc
+	push	bc
+	pop	de
+	ld	(ix - 3), bc
+	ld	a, (ix + 9)
+	jp	.LBB1_12
+	.local	.LBB1_3
+.LBB1_3:
+	ld	a, e
+	cp	a, 10
+	jr	nz, .LBB1_6
+; %bb.4:
+	ld	de, 23
+	push	bc
+	pop	hl
 	or	a, a
 	sbc	hl, de
 	call	pe, __setflag
-	jp	m, .LBB1_2
-; %bb.1:
+	jp	m, .LBB1_11
+; %bb.5:
+	ld	hl, 902
+	push	hl
 	ld	hl, _chat+41
-	ld	de, 902
-	push	de
 	push	hl
-	ld	hl, _chat
-	push	hl
-	ld	(ix - 3), iy
+	push	iy
+	ld	(ix - 9), bc
 	call	_memmove
-	ld	iy, (ix - 3)
+	ld	iy, _chat
 	pop	hl
 	pop	hl
 	pop	hl
@@ -1042,40 +1371,156 @@ _append_chat_line:                      ; @append_chat_line
 	inc	de
 	ld	bc, 40
 	ldir
-	dec	iy
-	.local	.LBB1_2
-.LBB1_2:
-	ld	(ix - 3), iy
+	ld	hl, 22
+	ld	(ix - 3), hl
+	ld	a, (ix + 9)
+	scf
+	sbc	hl, hl
+	ld	de, (ix - 9)
+	jp	.LBB1_12
+	.local	.LBB1_6
+.LBB1_6:
+	ld	(ix - 9), bc
+	push	bc
+	pop	hl
+	dec	hl
 	ld	bc, 41
-	lea	hl, iy + 0
+	ld	(ix - 3), hl
+	call	__imulu
+	ex	de, hl
+	add	iy, de
+	push	iy
+	call	_strlen
+	pop	de
+	ld	de, 39
+	ld	(ix - 6), hl
+	or	a, a
+	sbc	hl, de
+	call	pe, __setflag
+	ld	a, (ix + 9)
+	jp	m, .LBB1_10
+; %bb.7:
+	ld	de, 23
+	ld	bc, (ix - 9)
+	push	bc
+	pop	hl
+	or	a, a
+	sbc	hl, de
+	call	pe, __setflag
+	push	bc
+	pop	hl
+	push	bc
+	pop	de
+	ld	iy, 1
+	jp	m, .LBB1_9
+; %bb.8:
+	ld	hl, 902
+	push	hl
+	ld	hl, _chat+41
+	push	hl
+	ld	hl, _chat
+	push	hl
+	call	_memmove
+	pop	hl
+	pop	hl
+	pop	hl
+	xor	a, a
+	ld	(_chat+902), a
+	ld	a, (ix + 9)
+	ld	hl, _chat+902
+	push	hl
+	pop	de
+	inc	de
+	ld	bc, 40
+	ldir
+	ld	de, (ix - 9)
+	scf
+	sbc	hl, hl
+	push	hl
+	pop	iy
+	ld	hl, 22
+	.local	.LBB1_9
+.LBB1_9:                                ; %._crit_edge
+	ld	bc, 0
+	ld	(ix - 6), bc
+	add	iy, de
+	ld	(ix - 9), iy
+	ld	(_chat_count), iy
+	ld	bc, 41
 	call	__imulu
 	ex	de, hl
 	ld	hl, _chat
-	add	hl, de
-	ex	de, hl
-	ld	(ix - 6), de
-	ld	hl, 39
 	push	hl
-	ld	hl, (ix + 6)
-	push	hl
-	push	de
-	call	_strncpy
-	pop	hl
-	pop	hl
-	pop	hl
-	ld	iy, (ix - 6)
-	ld	(iy + 39), 0
-	ld	a, (ix + 9)
-	ld	(iy + 40), a
+	pop	iy
+	add	iy, de
+	ld	(iy), b
+	ld	(ix - 3), iy
 	ld	hl, (ix - 3)
 	inc	hl
+	ld	(ix - 3), hl
+	ld	bc, 39
+	ld	de, (ix - 3)
+	lea	hl, iy + 0
+	ldir
+	ld	(iy + 40), a
+	ld	hl, (ix - 9)
+	dec	hl
+	ld	(ix - 3), hl
+	.local	.LBB1_10
+.LBB1_10:
+	ld	bc, 41
+	ld	hl, (ix - 3)
+	call	__imulu
+	ex	de, hl
+	ld	iy, _chat
+	add	iy, de
+	ld	de, (ix - 6)
+	add	iy, de
+	ld	l, (ix + 6)
+	ld	(iy), l
+	ld	(iy + 1), b
+	jr	.LBB1_13
+	.local	.LBB1_11
+.LBB1_11:
+	ld	hl, 1
+	ld	(ix - 3), bc
+	ld	a, (ix + 9)
+	push	bc
+	pop	de
+	.local	.LBB1_12
+.LBB1_12:
+	add	hl, de
 	ld	(_chat_count), hl
+	ld	bc, 41
+	ld	hl, (ix - 3)
+	call	__imulu
+	ex	de, hl
+	lea	hl, iy + 0
+	add	hl, de
+	ld	(hl), b
+	push	hl
+	pop	iy
+	inc	iy
+	ld	bc, 39
+	lea	de, iy + 0
+	ldir
+	.local	.LBB1_13
+.LBB1_13:
+	ld	bc, 41
+	ld	hl, (ix - 3)
+	call	__imulu
+	ex	de, hl
+	ld	hl, _chat
+	push	hl
+	pop	iy
+	add	iy, de
+	ld	(iy + 40), a
 	ld	sp, ix
 	pop	ix
 	ret
 	.local	.Lfunc_end1
 .Lfunc_end1:
-	.size	_append_chat_line, .Lfunc_end1-_append_chat_line
+	.size	_append_chat_char, .Lfunc_end1-_append_chat_char
                                         ; -- End function
 	.section	.text._usb_event,"ax",@progbits
 	.type	_usb_event,@function            ; -- Begin function usb_event
@@ -1237,17 +1682,18 @@ _rx_complete:                           ; @rx_complete
 	ld	hl, -15
 	call	__frameset
 	ld	hl, (ix + 9)
-	ld	b, 0
+	ld	iy, 0
+	ld	b, iyh
 	add	hl, bc
 	or	a, a
 	sbc	hl, bc
-	jp	nz, .LBB5_41
+	jp	nz, .LBB5_28
 ; %bb.1:
 	ld	hl, (ix + 12)
 	ld	de, 8
 	or	a, a
 	sbc	hl, de
-	jp	c, .LBB5_41
+	jp	c, .LBB5_28
 ; %bb.2:
 	ld	a, (_rx_pkt)
 	ld	h, a
@@ -1259,48 +1705,45 @@ _rx_complete:                           ; @rx_complete
 	ld	l, a
 	ld	a, h
 	cp	a, 67
-	jp	nz, .LBB5_41
+	jp	nz, .LBB5_28
 ; %bb.3:
 	ld	a, c
 	cp	a, 71
-	jp	nz, .LBB5_41
+	jp	nz, .LBB5_28
 ; %bb.4:
 	ld	a, e
 	cp	a, 80
-	jp	nz, .LBB5_41
+	jp	nz, .LBB5_28
 ; %bb.5:
 	ld	a, l
 	cp	a, 84
-	jp	nz, .LBB5_41
+	jp	nz, .LBB5_28
 ; %bb.6:
 	ld	hl, _rx_pkt+6
 	ld	a, (_rx_pkt+4)
-	ld	iy, (hl)
+	ld	hl, (hl)
+	ld	(ix - 3), hl
 	ld.sis	de, 56
-	ex	de, hl
-	ld	e, iyl
-	ld	d, iyh
-	ex	de, hl
+                                        ; kill: def $hl killed $hl killed $uhl
 	or	a, a
 	sbc.sis	hl, de
-	ld	(ix - 3), iy
-	ld	e, iyl
-	ld	d, iyh
+	ld	hl, (ix - 3)
+                                        ; kill: def $hl killed $hl killed $uhl
 	jr	c, .LBB5_8
 ; %bb.7:
-	ld.sis	de, 56
+	ld.sis	hl, 56
 	.local	.LBB5_8
 .LBB5_8:
+	ld	(ix - 6), l
+	ld	(ix - 5), h
 	ld	l, -16
 	add	a, l
 	ld	l, a
 	cp	a, 5
-	jp	nc, .LBB5_41
+	jp	nc, .LBB5_28
 ; %bb.9:
-	ld	(ix - 6), e
-	ld	(ix - 5), d
-	ld	iy, 902
-	ld	de, 0
+	ld	bc, _chat+902
+	lea	de, iy + 0
 	ld	e, l
 	ld	hl, JTI5_0
 	add	hl, de
@@ -1311,141 +1754,50 @@ _rx_complete:                           ; @rx_complete
 	.local	.LBB5_10
 .LBB5_10:
 	ld	hl, _.str.6
-	jr	.LBB5_12
+	jr	.LBB5_13
 	.local	.LBB5_11
 .LBB5_11:
 	ld	hl, _.str.8
-	.local	.LBB5_12
-.LBB5_12:                               ; %.loopexit
 	ld	(_status_str), hl
-	jp	.LBB5_41
+	jp	.LBB5_27
+	.local	.LBB5_12
+.LBB5_12:
+	ld	hl, _.str.8
 	.local	.LBB5_13
 .LBB5_13:
-	ld	hl, _.str.8
 	ld	(_status_str), hl
-	ld	de, (_chat_count)
-	sbc	hl, hl
-	adc	hl, de
-	jp	nz, .LBB5_20
-; %bb.14:
-	ld	a, b
-	ld	(_chat), a
-	ld	iy, _chat
-	lea	hl, iy + 0
-	inc	hl
-	ld	bc, 39
-	ex	de, hl
-	lea	hl, iy + 0
-	ldir
-	ld	a, 2
-	ld	(_chat+40), a
-	ld	hl, 1
-	push	hl
-	pop	de
-	jp	.LBB5_25
-	.local	.LBB5_15
-.LBB5_15:
-	ld	hl, _.str.9
-	ld	(_status_str), hl
-	ld	de, (_chat_count)
-	ld	(ix - 9), de
-	sbc	hl, hl
-	adc	hl, de
-	ld	iy, _chat
-	lea	de, iy + 0
-	inc	de
-	ld	(ix - 15), de
-	jp	nz, .LBB5_22
-; %bb.16:
-	ld	a, b
-	ld	(_chat), a
-	ld	bc, 39
-	lea	hl, iy + 0
-	ldir
-	ld	a, 3
-	ld	(_chat+40), a
-	ld	hl, 1
-	push	hl
-	pop	iy
-	jp	.LBB5_28
-	.local	.LBB5_17
-.LBB5_17:
-	ld	hl, _.str.7
-	ld	(_status_str), hl
-	ld	hl, (ix - 3)
-	add.sis	hl, bc
-	or	a, a
-	sbc.sis	hl, bc
-	ld	iy, _rx_pkt+8
-	ld	l, (ix - 6)
-	ld	h, (ix - 5)
-	jp	z, .LBB5_41
-; %bb.18:
-	ld	de, 0
-	ld	e, l
-	ld	d, h
-	.local	.LBB5_19
-.LBB5_19:                               ; =>This Inner Loop Header: Depth=1
-	ld	(ix - 6), de
-	ld	(ix - 3), iy
-	ld	a, (iy)
-	ld	hl, 2
-	push	hl
-	ld	l, a
-	push	hl
-	call	_append_chat_char
-	ld	de, (ix - 6)
-	ld	iy, (ix - 3)
-	ld	b, 0
-	pop	hl
-	pop	hl
-	inc	iy
-	dec	de
-	sbc	hl, hl
-	adc	hl, de
-	jr	nz, .LBB5_19
-	jp	.LBB5_41
-	.local	.LBB5_20
-.LBB5_20:
-	ex	de, hl
-	ld	de, 23
+	ld	hl, (_chat_count)
+	ld	de, 1
 	ld	(ix - 3), hl
 	or	a, a
 	sbc	hl, de
 	call	pe, __setflag
-	jp	m, .LBB5_24
-; %bb.21:
-	push	iy
-	ld	hl, _chat+41
-	push	hl
-	ld	hl, _chat
-	push	hl
-	call	_memmove
-	pop	hl
-	pop	hl
-	pop	hl
-	xor	a, a
-	ld	(_chat+902), a
-	ld	hl, _chat+902
-	push	hl
-	pop	de
-	inc	de
-	ld	bc, 40
-	ldir
+	ld	b, d
+	jp	m, .LBB5_28
+; %bb.14:
 	ld	de, (ix - 3)
 	dec	de
-	ld	hl, 22
-	jr	.LBB5_26
-	.local	.LBB5_22
-.LBB5_22:
-	ld	iy, (ix - 9)
-	lea	hl, iy + 0
+	ld	bc, 41
+	ex	de, hl
+	call	__imulu
+	ex	de, hl
+	ld	hl, _chat
+	add	hl, de
+	ld	a, (hl)
+	or	a, a
+	jp	z, .LBB5_28
+; %bb.15:
 	ld	de, 23
+	ld	bc, (ix - 3)
+	push	bc
+	pop	hl
 	or	a, a
 	sbc	hl, de
-	call	pe, __setflag
-	jp	m, .LBB5_27
-; %bb.23:
+	push	bc
+	pop	hl
+	ld	iy, 1
+	jr	c, .LBB5_17
+; %bb.16:
 	ld	hl, 902
 	push	hl
 	ld	hl, _chat+41
@@ -1464,21 +1816,16 @@ _rx_complete:                           ; @rx_complete
 	inc	de
 	ld	bc, 40
 	ldir
-	ld	iy, (ix - 9)
-	dec	iy
+	ld	bc, (ix - 3)
+	scf
+	sbc	hl, hl
+	push	hl
+	pop	iy
 	ld	hl, 22
-	jr	.LBB5_29
-	.local	.LBB5_24
-.LBB5_24:
-	ld	de, (ix - 3)
-	push	de
-	pop	hl
-	.local	.LBB5_25
-.LBB5_25:
-	inc	de
-	.local	.LBB5_26
-.LBB5_26:
-	ld	(_chat_count), de
+	.local	.LBB5_17
+.LBB5_17:                               ; %._crit_edge4
+	add	iy, bc
+	ld	(_chat_count), iy
 	ld	bc, 41
 	call	__imulu
 	ex	de, hl
@@ -1494,16 +1841,52 @@ _rx_complete:                           ; @rx_complete
 	lea	hl, iy + 0
 	ldir
 	ld	(iy + 40), 2
-	jp	.LBB5_40
-	.local	.LBB5_27
-.LBB5_27:
+	jp	.LBB5_27
+	.local	.LBB5_18
+.LBB5_18:
+	ld	hl, _.str.9
+	ld	(_status_str), hl
+	ld	iy, (_chat_count)
+	ld	de, 23
 	lea	hl, iy + 0
-	.local	.LBB5_28
-.LBB5_28:
-	inc	iy
-	.local	.LBB5_29
-.LBB5_29:
+	or	a, a
+	sbc	hl, de
+	call	pe, __setflag
+	inc	bc
+	ld	(ix - 12), bc
+	ld	bc, 1
 	ld	(ix - 9), iy
+	lea	hl, iy + 0
+	jp	m, .LBB5_20
+; %bb.19:
+	ld	hl, 902
+	push	hl
+	ld	hl, _chat+41
+	push	hl
+	ld	hl, _chat
+	push	hl
+	call	_memmove
+	pop	hl
+	pop	hl
+	pop	hl
+	xor	a, a
+	ld	(_chat+902), a
+	ld	bc, 40
+	ld	de, (ix - 12)
+	ld	hl, _chat+902
+	ldir
+	scf
+	sbc	hl, hl
+	push	hl
+	pop	bc
+	ld	hl, 22
+	.local	.LBB5_20
+.LBB5_20:
+	ld	de, (ix - 9)
+	push	bc
+	pop	iy
+	add	iy, de
+	ld	(ix - 15), iy
 	ld	(_chat_count), iy
 	ld	bc, 41
 	call	__imulu
@@ -1511,30 +1894,30 @@ _rx_complete:                           ; @rx_complete
 	ld	iy, _chat
 	add	iy, de
 	ld	(iy), b
-	ld	(ix - 12), iy
-	ld	hl, (ix - 12)
+	ld	(ix - 9), iy
+	ld	hl, (ix - 9)
 	inc	hl
-	ld	(ix - 12), hl
+	ld	(ix - 9), hl
 	ld	bc, 39
-	ld	de, (ix - 12)
+	ld	de, (ix - 9)
 	lea	hl, iy + 0
 	ldir
-	ld	de, (ix - 9)
 	ld	(iy + 40), 3
 	ld	hl, (ix - 3)
 	add.sis	hl, bc
 	or	a, a
 	sbc.sis	hl, bc
-	jr	z, .LBB5_33
-; %bb.30:
+	ld	bc, (ix - 15)
+	jr	z, .LBB5_24
+; %bb.21:
 	ld	de, 0
 	ld	l, (ix - 6)
 	ld	h, (ix - 5)
 	ld	e, l
 	ld	d, h
 	ld	iy, _rx_pkt+8
-	.local	.LBB5_31
-.LBB5_31:                               ; =>This Inner Loop Header: Depth=1
+	.local	.LBB5_22
+.LBB5_22:                               ; =>This Inner Loop Header: Depth=1
 	ld	(ix - 6), de
 	ld	(ix - 3), iy
 	ld	a, (iy)
@@ -1551,90 +1934,69 @@ _rx_complete:                           ; @rx_complete
 	dec	de
 	sbc	hl, hl
 	adc	hl, de
-	jr	nz, .LBB5_31
-; %bb.32:
-	ld	de, (_chat_count)
-	.local	.LBB5_33
-.LBB5_33:
-	sbc	hl, hl
-	adc	hl, de
-	ld	a, 0
-	jr	nz, .LBB5_35
-; %bb.34:
-	ld	(_chat), a
-	ld	bc, 39
-	ld	de, (ix - 15)
-	ld	iy, _chat
-	lea	hl, iy + 0
-	ldir
-	ld	a, 3
-	ld	(_chat+40), a
-	ld	hl, 1
-	push	hl
-	pop	de
-	jr	.LBB5_38
-	.local	.LBB5_35
-.LBB5_35:
-	push	de
+	jr	nz, .LBB5_22
+; %bb.23:
+	ld	bc, (_chat_count)
+	.local	.LBB5_24
+.LBB5_24:
+	push	bc
 	pop	hl
-	ld	bc, 23
+	ld	de, 23
 	or	a, a
-	sbc	hl, bc
+	sbc	hl, de
 	call	pe, __setflag
-	ld	iy, _chat
-	jp	m, .LBB5_37
-; %bb.36:
+	push	bc
+	pop	hl
+	ld	iy, 1
+	jp	m, .LBB5_26
+; %bb.25:
 	ld	hl, 902
 	push	hl
 	ld	hl, _chat+41
 	push	hl
-	push	iy
-	ld	(ix - 9), de
+	ld	hl, _chat
+	push	hl
+	ld	(ix - 3), bc
 	call	_memmove
-	ld	iy, _chat
 	pop	hl
 	pop	hl
 	pop	hl
 	xor	a, a
 	ld	(_chat+902), a
-	ld	hl, _chat+902
-	push	hl
-	pop	de
-	inc	de
 	ld	bc, 40
+	ld	de, (ix - 12)
+	ld	hl, _chat+902
 	ldir
-	ld	de, (ix - 9)
-	dec	de
+	ld	bc, (ix - 3)
+	scf
+	sbc	hl, hl
+	push	hl
+	pop	iy
 	ld	hl, 22
-	jr	.LBB5_39
-	.local	.LBB5_37
-.LBB5_37:
-	push	de
-	pop	hl
-	.local	.LBB5_38
-.LBB5_38:
-	inc	de
-	.local	.LBB5_39
-.LBB5_39:
-	ld	(_chat_count), de
+	.local	.LBB5_26
+.LBB5_26:
+	add	iy, bc
+	ld	(_chat_count), iy
 	ld	bc, 41
 	call	__imulu
 	ex	de, hl
+	ld	iy, _chat
 	add	iy, de
 	ld	(iy), b
-	lea	hl, iy + 0
-	inc	iy
+	ld	(ix - 3), iy
+	ld	hl, (ix - 3)
+	inc	hl
+	ld	(ix - 3), hl
 	ld	bc, 39
-	lea	de, iy + 0
-	push	hl
-	pop	iy
+	ld	de, (ix - 3)
+	lea	hl, iy + 0
 	ldir
 	ld	(iy + 40), 3
-	.local	.LBB5_40
-.LBB5_40:                               ; %.loopexit
+	.local	.LBB5_27
+.LBB5_27:                               ; %.loopexit
 	ld	b, 0
-	.local	.LBB5_41
-.LBB5_41:                               ; %.loopexit
+	.local	.LBB5_28
+.LBB5_28:                               ; %.loopexit
 	ld	a, b
 	ld	(_rx_pending), a
 	call	_queue_rx
@@ -1643,238 +2005,57 @@ _rx_complete:                           ; @rx_complete
 	ld	sp, ix
 	pop	ix
 	ret
+	.local	.LBB5_29
+.LBB5_29:
+	ld	de, _rx_pkt+8
+	ld	hl, _.str.7
+	ld	(_status_str), hl
+	ld	hl, (ix - 3)
+	add.sis	hl, bc
+	or	a, a
+	sbc.sis	hl, bc
+	ld	b, 0
+	jr	z, .LBB5_28
+; %bb.30:
+	ld	bc, 0
+	ld	l, (ix - 6)
+	ld	h, (ix - 5)
+	ld	c, l
+	ld	b, h
+	ld	(ix - 6), bc
+	.local	.LBB5_31
+.LBB5_31:                               ; =>This Inner Loop Header: Depth=1
+	ex	de, hl
+	ld	(ix - 3), hl
+	ld	a, (hl)
+	ld	hl, 2
+	push	hl
+	ld	l, a
+	push	hl
+	call	_append_chat_char
+	ld	b, 0
+	pop	hl
+	pop	hl
+	ld	de, (ix - 3)
+	inc	de
+	ld	hl, (ix - 6)
+	dec	hl
+	ld	(ix - 6), hl
+	add	hl, bc
+	or	a, a
+	sbc	hl, bc
+	jr	nz, .LBB5_31
+	jr	.LBB5_28
 	.local	.Lfunc_end5
 .Lfunc_end5:
 	.size	_rx_complete, .Lfunc_end5-_rx_complete
 	.section	.rodata._rx_complete,"a",@progbits
 JTI5_0:
 	d24	.LBB5_10
-	d24	.LBB5_17
-	d24	.LBB5_13
-	d24	.LBB5_15
+	d24	.LBB5_29
+	d24	.LBB5_12
+	d24	.LBB5_18
 	d24	.LBB5_11
-                                        ; -- End function
-	.section	.text._append_chat_char,"ax",@progbits
-	.type	_append_chat_char,@function     ; -- Begin function append_chat_char
-_append_chat_char:                      ; @append_chat_char
-; %bb.0:
-	ld	hl, -9
-	call	__frameset
-	ld	e, (ix + 6)
-	ld	iy, _chat
-	xor	a, a
-	ld	hl, (_chat_count)
-	push	hl
-	pop	bc
-	add	hl, bc
-	or	a, a
-	sbc	hl, bc
-	jr	nz, .LBB6_2
-; %bb.1:
-	ld	hl, 1
-	ld	(_chat_count), hl
-	ld	(_chat), a
-	lea	hl, iy + 0
-	inc	hl
-	ld	bc, 39
-	ld	a, e
-	ex	de, hl
-	lea	hl, iy + 0
-	ldir
-	ld	e, a
-	ld	hl, 1
-	ld	a, (ix + 9)
-	ld	(_chat+40), a
-	ld	a, e
-	cp	a, 10
-	jr	nz, .LBB6_6
-	jp	.LBB6_11
-	.local	.LBB6_2
-.LBB6_2:
-	ld	a, e
-	cp	a, 10
-	jr	nz, .LBB6_5
-; %bb.3:
-	ld	de, 23
-	push	bc
-	pop	hl
-	or	a, a
-	sbc	hl, de
-	call	pe, __setflag
-	jp	m, .LBB6_10
-; %bb.4:
-	ld	hl, 902
-	push	hl
-	ld	hl, _chat+41
-	push	hl
-	push	iy
-	ld	(ix - 3), bc
-	call	_memmove
-	ld	iy, _chat
-	pop	hl
-	pop	hl
-	pop	hl
-	xor	a, a
-	ld	(_chat+902), a
-	ld	hl, _chat+902
-	push	hl
-	pop	de
-	inc	de
-	ld	bc, 40
-	ldir
-	ld	de, (ix - 3)
-	dec	de
-	ld	hl, 22
-	jp	.LBB6_12
-	.local	.LBB6_5
-.LBB6_5:
-	push	bc
-	pop	hl
-	.local	.LBB6_6
-.LBB6_6:
-	ld	(ix - 3), hl
-	dec	hl
-	ld	bc, 41
-	ld	(ix - 6), hl
-	call	__imulu
-	ex	de, hl
-	add	iy, de
-	push	iy
-	call	_strlen
-	push	hl
-	pop	bc
-	pop	hl
-	ld	de, 39
-	push	bc
-	pop	hl
-	or	a, a
-	sbc	hl, de
-	call	pe, __setflag
-	jp	m, .LBB6_9
-; %bb.7:
-	ld	de, 23
-	ld	hl, (ix - 3)
-	or	a, a
-	sbc	hl, de
-	call	pe, __setflag
-	jp	m, .LBB6_13
-; %bb.8:
-	ld	hl, 902
-	push	hl
-	ld	hl, _chat+41
-	push	hl
-	ld	hl, _chat
-	push	hl
-	call	_memmove
-	ld	iy, _chat
-	pop	hl
-	pop	hl
-	pop	hl
-	xor	a, a
-	ld	(_chat+902), a
-	ld	hl, _chat+902
-	push	hl
-	pop	de
-	inc	de
-	ld	bc, 40
-	ldir
-	ld	hl, 22
-	ld	a, (ix + 9)
-	ld	de, (ix - 6)
-	jr	.LBB6_14
-	.local	.LBB6_9
-.LBB6_9:
-	ld	de, (ix - 6)
-	ld	a, (ix + 9)
-	ld	(ix - 6), bc
-	jr	.LBB6_15
-	.local	.LBB6_10
-.LBB6_10:
-	push	bc
-	pop	hl
-	.local	.LBB6_11
-.LBB6_11:
-	push	hl
-	pop	de
-	inc	de
-	.local	.LBB6_12
-.LBB6_12:
-	ld	(_chat_count), de
-	ld	bc, 41
-	ld	(ix - 3), hl
-	call	__imulu
-	ex	de, hl
-	lea	hl, iy + 0
-	add	hl, de
-	ld	(hl), b
-	push	hl
-	pop	iy
-	inc	iy
-	ld	bc, 39
-	lea	de, iy + 0
-	ldir
-	ld	a, (ix + 9)
-	jr	.LBB6_16
-	.local	.LBB6_13
-.LBB6_13:
-	ld	hl, (ix - 3)
-	push	hl
-	pop	de
-	inc	de
-	ld	a, (ix + 9)
-	ld	iy, _chat
-	.local	.LBB6_14
-.LBB6_14:
-	ld	(ix - 3), hl
-	ld	bc, 0
-	ld	(ix - 6), bc
-	ld	(_chat_count), de
-	ld	bc, 41
-	call	__imulu
-	ex	de, hl
-	add	iy, de
-	ld	(iy), b
-	ld	(ix - 9), iy
-	ld	hl, (ix - 9)
-	inc	hl
-	ld	(ix - 9), hl
-	ld	bc, 39
-	ld	de, (ix - 9)
-	lea	hl, iy + 0
-	ldir
-	ld	de, (ix - 3)
-	ld	(iy + 40), a
-	.local	.LBB6_15
-.LBB6_15:
-	ld	bc, 41
-	ld	(ix - 3), de
-	ex	de, hl
-	call	__imulu
-	ex	de, hl
-	ld	iy, _chat
-	add	iy, de
-	ld	de, (ix - 6)
-	add	iy, de
-	ld	l, (ix + 6)
-	ld	(iy), l
-	ld	(iy + 1), b
-	.local	.LBB6_16
-.LBB6_16:
-	ld	bc, 41
-	ld	hl, (ix - 3)
-	call	__imulu
-	ex	de, hl
-	ld	hl, _chat
-	push	hl
-	pop	iy
-	add	iy, de
-	ld	(iy + 40), a
-	ld	sp, ix
-	pop	ix
-	ret
-	.local	.Lfunc_end6
-.Lfunc_end6:
-	.size	_append_chat_char, .Lfunc_end6-_append_chat_char
                                         ; -- End function
 	.section	.rodata._.str,"a",@progbits
 	.balign	1
@@ -2083,6 +2264,12 @@ _tx_busy:
 	.balign	1
 	.local	_.str.12
 _.str.12:
+	.asciz	"> "
+
+	.section	.rodata._.str.13,"a",@progbits
+	.balign	1
+	.local	_.str.13
+_.str.13:
 	.asciz	"Sending prompt\342\200\246"
 
 	.section	.bss._tx_pkt,"aw",@nobits
@@ -2091,40 +2278,40 @@ _.str.12:
 _tx_pkt:
 	.zero	64
 
-	.section	.rodata._.str.13,"a",@progbits
-	.balign	1
-	.local	_.str.13
-_.str.13:
-	.asciz	"USB Tx error"
-
 	.section	.rodata._.str.14,"a",@progbits
 	.balign	1
 	.local	_.str.14
 _.str.14:
-	.asciz	"CalcGPT"
+	.asciz	"USB Tx error"
 
 	.section	.rodata._.str.15,"a",@progbits
 	.balign	1
 	.local	_.str.15
 _.str.15:
-	.asciz	"| "
+	.asciz	"CalcGPT"
 
 	.section	.rodata._.str.16,"a",@progbits
 	.balign	1
 	.local	_.str.16
 _.str.16:
-	.asciz	"[A] > "
+	.asciz	"| "
 
 	.section	.rodata._.str.17,"a",@progbits
 	.balign	1
 	.local	_.str.17
 _.str.17:
-	.asciz	"[a] > "
+	.asciz	"[A] > "
 
 	.section	.rodata._.str.18,"a",@progbits
 	.balign	1
 	.local	_.str.18
 _.str.18:
+	.asciz	"[a] > "
+
+	.section	.rodata._.str.19,"a",@progbits
+	.balign	1
+	.local	_.str.19
+_.str.19:
 	.asciz	"[1] > "
 
 	.ident	"clang version 19.1.0 (https://github.com/CE-Programming/llvm-project ef28e9c54cd1333a6091ab2ffbd315b465fc5090)"
@@ -2132,11 +2319,9 @@ _.str.18:
 	.extern	_usb_Cleanup
 	.extern	_llvm.eh.sjlj.functioncontext
 	.extern	_usb_HandleEvents
-	.extern	_strncpy
 	.extern	_gfx_PrintString
 	.extern	_gfx_FillRectangle
 	.extern	__iremu
-	.extern	_llvm.lifetime.end.p0
 	.extern	_llvm.memmove.p0.p0.i24
 	.extern	_memcpy
 	.extern	_gfx_SetPalette
@@ -2165,11 +2350,10 @@ _.str.18:
 	.extern	_gfx_End
 	.extern	_llvm.eh.sjlj.setup.dispatch
 	.extern	_llvm.stacksave.p0
-	.extern	_llvm.lifetime.start.p0
 	.extern	__frameset0
 	.extern	_llvm.umin.i16
-	.extern	_llvm.frameaddress.p0
 	.extern	__Unwind_SjLj_Register
+	.extern	_llvm.frameaddress.p0
 	.extern	_llvm.stackrestore.p0
 	.extern	_gfx_Blit
 	.extern	_gfx_HorizLine

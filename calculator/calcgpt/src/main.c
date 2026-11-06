@@ -88,6 +88,7 @@ static usb_error_t tx_complete(usb_endpoint_t ep, usb_transfer_status_t status, 
 }
 
 static void append_chat_char(char c, uint8_t color);
+static void append_newline(uint8_t color);
 
 static usb_error_t rx_complete(usb_endpoint_t ep, usb_transfer_status_t status, size_t n, void *arg) {
     (void)ep; (void)arg;
@@ -103,6 +104,9 @@ static usb_error_t rx_complete(usb_endpoint_t ep, usb_transfer_status_t status, 
 
             if (type == PKT_REPLY_START) {
                 status_str = "Gemini typing…";
+                if (chat_count > 0 && strlen(chat[chat_count - 1].text) > 0) {
+                    append_newline(2);
+                }
             } else if (type == PKT_REPLY_CHUNK) {
                 uint16_t i;
                 status_str = "Receiving stream…";
@@ -111,15 +115,17 @@ static usb_error_t rx_complete(usb_endpoint_t ep, usb_transfer_status_t status, 
                 }
             } else if (type == PKT_REPLY_END) {
                 status_str = "Online (Ready)";
-                append_chat_char('\n', 2);
+                if (chat_count > 0 && strlen(chat[chat_count - 1].text) > 0) {
+                    append_newline(2);
+                }
             } else if (type == PKT_ERROR) {
                 uint16_t i;
                 status_str = "Gemini Error";
-                append_chat_char('\n', 3);
+                append_newline(3);
                 for (i = 0; i < len; i++) {
                     append_chat_char((char)rx_pkt.payload[i], 3);
                 }
-                append_chat_char('\n', 3);
+                append_newline(3);
             } else if (type == PKT_PONG) {
                 status_str = "Online (Ready)";
             }
@@ -170,14 +176,17 @@ static void scroll_chat(void) {
     if (chat_count > 0) chat_count--;
 }
 
-static void append_chat_line(const char *str, uint8_t color) {
+static void append_newline(uint8_t color) {
+    int cur_idx;
     if (chat_count >= MAX_LINES) {
         scroll_chat();
+        cur_idx = MAX_LINES - 1;
+    } else {
+        chat_count++;
+        cur_idx = chat_count - 1;
     }
-    strncpy(chat[chat_count].text, str, LINE_COLS);
-    chat[chat_count].text[LINE_COLS] = '\0';
-    chat[chat_count].color = color;
-    chat_count++;
+    memset(chat[cur_idx].text, 0, sizeof(chat[cur_idx].text));
+    chat[cur_idx].color = color;
 }
 
 static void append_chat_char(char c, uint8_t color) {
@@ -185,43 +194,32 @@ static void append_chat_char(char c, uint8_t color) {
     int len;
 
     if (chat_count == 0) {
-        chat_count = 1;
-        memset(chat[0].text, 0, sizeof(chat[0].text));
-        chat[0].color = color;
+        append_newline(color);
+    }
+
+    if (c == '\n') {
+        append_newline(color);
+        return;
     }
 
     cur_idx = chat_count - 1;
     len = strlen(chat[cur_idx].text);
 
-    if (c == '\n') {
-        if (chat_count >= MAX_LINES) {
-            scroll_chat();
-            cur_idx = MAX_LINES - 1;
-        } else {
-            chat_count++;
-            cur_idx = chat_count - 1;
-        }
-        memset(chat[cur_idx].text, 0, sizeof(chat[cur_idx].text));
-        chat[cur_idx].color = color;
-        return;
-    }
-
     if (len >= LINE_COLS) {
-        if (chat_count >= MAX_LINES) {
-            scroll_chat();
-            cur_idx = MAX_LINES - 1;
-        } else {
-            chat_count++;
-            cur_idx = chat_count - 1;
-        }
-        memset(chat[cur_idx].text, 0, sizeof(chat[cur_idx].text));
-        chat[cur_idx].color = color;
+        append_newline(color);
+        cur_idx = chat_count - 1;
         len = 0;
     }
 
     chat[cur_idx].text[len] = c;
     chat[cur_idx].text[len + 1] = '\0';
     chat[cur_idx].color = color;
+}
+
+static void append_chat_string(const char *str, uint8_t color) {
+    while (*str) {
+        append_chat_char(*str++, color);
+    }
 }
 
 static void draw_ui(void) {
@@ -280,13 +278,10 @@ static void draw_ui(void) {
 static void send_prompt(void) {
     if (input_len == 0 || !ep_in || tx_busy) return;
 
-    /* Display in chat */
-    char prompt_display[LINE_COLS + 1];
-    prompt_display[0] = '>';
-    prompt_display[1] = ' ';
-    strncpy(prompt_display + 2, input_buf, LINE_COLS - 2);
-    prompt_display[LINE_COLS] = '\0';
-    append_chat_line(prompt_display, 1);
+    /* Display prompt in cyan with word wrapping, then drop to new line */
+    append_chat_string("> ", 1);
+    append_chat_string(input_buf, 1);
+    append_newline(2);
 
     status_str = "Sending prompt…";
     cgpt_init_packet(&tx_pkt, PKT_PROMPT_START, 0, input_buf, input_len);
@@ -384,9 +379,12 @@ int main(void) {
     gfx_palette[6] = gfx_RGBTo1555(255, 80, 80);   /* 6: Red error text */
     gfx_palette[7] = gfx_RGBTo1555(240, 244, 248);/* 7: Pure White text */
 
-    append_chat_line("CalcGPT Gemini v1.0", 3);
-    append_chat_line("Connect USB cable to host.", 4);
-    append_chat_line("ALPHA: toggle A/a/1 | ENTER: send", 4);
+    append_chat_string("CalcGPT Gemini v1.0", 3);
+    append_newline(3);
+    append_chat_string("Connect USB cable to host.", 4);
+    append_newline(4);
+    append_chat_string("ALPHA: toggle A/a/1 | ENTER: send", 4);
+    append_newline(4);
 
     /* Initialize USB in device mode */
     err = usb_Init(usb_event, NULL, &descriptors, USB_DEFAULT_INIT_FLAGS);
@@ -434,3 +432,4 @@ int main(void) {
     gfx_End();
     return 0;
 }
+

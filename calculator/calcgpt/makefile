@@ -8,3 +8,4 @@ CEDEV_TOOLCHAIN ?= $(CEDEV)
 COMMENT ?= $(shell $(CEDEV)/bin/cedev-config --comment)
 export PATH := $(CEDEV)/bin:$(PATH)
 include $(shell $(CEDEV)/bin/cedev-config --makefile)
+

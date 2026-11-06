@@ -51,3 +51,4 @@ static inline void cgpt_init_packet(cgpt_packet_t *pkt, uint8_t type, uint8_t se
 }
 
 #endif
+
