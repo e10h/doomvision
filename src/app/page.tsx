@@ -468,6 +468,7 @@ export default function OpticalReceiverPage() {
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 20 }}>
         <Link href="/usb" className="custom-btn">Connect calculator over USB →</Link>
         <Link href="/ai" className="custom-btn" style={{ borderColor: "#00ff88", color: "#00ff88" }}>CalcGPT (Gemini AI on Calculator) →</Link>
+        <Link href="/browser" className="custom-btn" style={{ borderColor: "#00d8ff", color: "#00d8ff" }}>TI-84 Web Browser →</Link>
         <Link href="/optical" className="custom-btn">Six-color music transfer demo →</Link>
       </div>
       {/* Header */}

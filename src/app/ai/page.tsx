@@ -384,6 +384,9 @@ export default function AiPage() {
           <Link href="/ai" style={{ color: "#00ff88", textDecoration: "underline", fontWeight: 600 }}>
             CalcGPT
           </Link>
+          <Link href="/browser" style={{ color: "#7f8a9a", textDecoration: "none" }}>
+            Browser
+          </Link>
         </nav>
       </header>
 

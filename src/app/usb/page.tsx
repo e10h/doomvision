@@ -107,6 +107,7 @@ export default function UsbReceiver() {
       <Link href="/">doomvision</Link>
       <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
         <Link href="/ai" style={{ fontSize: 13, color: "#88efbe", textDecoration: "none", fontWeight: 600 }}>CalcGPT (AI) ↗</Link>
+        <Link href="/browser" style={{ fontSize: 13, color: "#00d8ff", textDecoration: "none", fontWeight: 600 }}>Browser ↗</Link>
         <span>USB AUDIO</span>
       </div>
     </header>

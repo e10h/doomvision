@@ -1,0 +1,376 @@
+
+Merging object attributes
+
+
+Discarded input sections
+
+ .comment       0x00000000       0x70 obj/BROWSER.o
+ .note.GNU-stack
+                0x00000000        0x0 obj/BROWSER.o
+ .init.weak_crt
+                0x00000000       0x10 obj/BROWSER.o
+ .text          0x00000000        0x0 obj/crt0.o
+ .data          0x00000000        0x0 obj/crt0.o
+ .bss           0x00000000        0x0 obj/crt0.o
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+prgm             0x00d1a87f         0x00400000
+bss              0x00d052c6         0x0000ed12
+*default*        0x00000000         0xffffffff
+
+Linker script and memory map
+
+                0x00d1a87f                        LOAD_ADDR = 0xd1a87f
+                0x00d052c6                        BSSHEAP_LOW = 0xd052c6
+                0x00d13fd8                        BSSHEAP_HIGH = 0xd13fd8
+                0x00d1a87e                        STACK_HIGH = 0xd1a87e
+                0x00000001                        __TICE__ = 0x1
+                0x00d1a87f                        . = LOAD_ADDR
+
+.header         0x00d1a87f       0x2c
+ *(.header)
+ .header        0x00d1a87f        0x3 obj/crt0.o
+ *(.header.icon)
+ .header.icon   0x00d1a882       0x29 obj/BROWSER.o
+                0x00d1a887                ___description
+
+.init           0x00d1a8ab      0x140
+ *(.init)
+ .init          0x00d1a8ab      0x140 obj/crt0.o
+                0x00d1a8ab                __start
+                0x00d1a908                __libload_library_GRAPHX
+                0x00d1a911                _gfx_Begin
+                0x00d1a915                _gfx_End
+                0x00d1a919                _gfx_SetColor
+                0x00d1a91d                _gfx_FillScreen
+                0x00d1a921                _gfx_SetDraw
+                0x00d1a925                _gfx_Blit
+                0x00d1a929                _gfx_PrintStringXY
+                0x00d1a92d                _gfx_SetTextFGColor
+                0x00d1a931                _gfx_HorizLine
+                0x00d1a935                _gfx_Circle
+                0x00d1a939                _gfx_Rectangle
+                0x00d1a93d                _gfx_FillRectangle
+                0x00d1a941                __libload_library_KEYPADC
+                0x00d1a94b                _kb_Scan
+                0x00d1a94f                __libload_library_USBDRVCE
+                0x00d1a95a                _usb_Init
+                0x00d1a95e                _usb_Cleanup
+                0x00d1a962                _usb_HandleEvents
+                0x00d1a966                _usb_FindDevice
+                0x00d1a96a                _usb_GetDeviceEndpoint
+                0x00d1a96e                _usb_SetEndpointFlags
+                0x00d1a972                _usb_ScheduleTransfer
+                0x00d1a9af                ___exithl
+                0x00d1a9b0                _exit.sp
+
+.text           0x00d1a9eb     0x144b
+ *(.text.unlikely .text.*_unlikely .text.unlikely.*)
+ *(.text.exit .text.exit.*)
+ *(.text.startup .text.startup.*)
+ *(.text.hot .text.hot.*)
+ *(SORT_BY_NAME(.text.sorted.*))
+ *(.text .stub .text.* .gnu.linkonce.t.*)
+ .text          0x00d1a9eb      0x244 obj/BROWSER.o
+                0x00d1a9eb                __land
+                0x00d1a9ef                __iand
+                0x00d1aa06                __bshru
+                0x00d1aa10                __frameset
+                0x00d1aa1e                __frameset0
+                0x00d1aa29                __i48mulu
+                0x00d1aaf1                __i48shrs
+                0x00d1aaf6                __i48shru
+                0x00d1ab29                __imulu
+                0x00d1ab29                __imuls
+                0x00d1ab59                __sshl
+                0x00d1ab59                __ishl
+                0x00d1ab7f                __ishru
+                0x00d1ab84                __ishrs
+                0x00d1abc0                __sand
+                0x00d1abc9                __setflag
+                0x00d1abd3                __smulu
+                0x00d1abd3                __smuls
+                0x00d1abe6                __sor
+                0x00d1abef                _memcpy
+                0x00d1ac10                _memset
+ .text._main    0x00d1ac2f      0x905 obj/BROWSER.o
+                0x00d1ac2f                _main
+ .text._draw_chrome_bar
+                0x00d1b534      0x254 obj/BROWSER.o
+ .text._draw_char
+                0x00d1b788       0xcc obj/BROWSER.o
+ .text._save_and_draw_cursor
+                0x00d1b854       0xd6 obj/BROWSER.o
+ .text._usb_event
+                0x00d1b92a       0xc7 obj/BROWSER.o
+ .text._send_cmd
+                0x00d1b9f1       0xff obj/BROWSER.o
+ .text._restore_cursor_bg
+                0x00d1baf0       0xbd obj/BROWSER.o
+ .text._tx_complete
+                0x00d1bbad        0xe obj/BROWSER.o
+ .text._queue_rx
+                0x00d1bbbb       0x4b obj/BROWSER.o
+ .text._rx_complete
+                0x00d1bc06      0x230 obj/BROWSER.o
+ *(.gnu.warning)
+
+.rodata         0x00d1be36      0x67e
+ *(.rodata .rodata.* .gnu.linkonce.r.*)
+ .rodata._main  0x00d1be36       0x12 obj/BROWSER.o
+ .rodata._rx_complete
+                0x00d1be48       0x12 obj/BROWSER.o
+ .rodata._.str  0x00d1be5a       0x1c obj/BROWSER.o
+ .rodata._.str.1
+                0x00d1be76       0x1f obj/BROWSER.o
+ .rodata._.str.2
+                0x00d1be95       0x1c obj/BROWSER.o
+ .rodata._.str.3
+                0x00d1beb1        0xa obj/BROWSER.o
+ .rodata._.str.4
+                0x00d1bebb       0x24 obj/BROWSER.o
+ .rodata._.str.5
+                0x00d1bedf       0x24 obj/BROWSER.o
+ .rodata._.str.6
+                0x00d1bf03       0x21 obj/BROWSER.o
+ .rodata._descriptors
+                0x00d1bf24        0xd obj/BROWSER.o
+ .rodata._.str.7
+                0x00d1bf31       0x11 obj/BROWSER.o
+ .rodata._.str.8
+                0x00d1bf42        0xe obj/BROWSER.o
+ .rodata._.str.9
+                0x00d1bf50        0x8 obj/BROWSER.o
+ .rodata._.str.10
+                0x00d1bf58        0xd obj/BROWSER.o
+ .rodata._.str.11
+                0x00d1bf65        0xe obj/BROWSER.o
+ .rodata._.str.12
+                0x00d1bf73       0x11 obj/BROWSER.o
+ .rodata._.str.13
+                0x00d1bf84        0xd obj/BROWSER.o
+ .rodata._.str.14
+                0x00d1bf91        0x5 obj/BROWSER.o
+ .rodata._font8x8_basic
+                0x00d1bf96      0x400 obj/BROWSER.o
+ .rodata._cursor_sprite
+                0x00d1c396       0x6c obj/BROWSER.o
+ .rodata._.str.16
+                0x00d1c402       0x18 obj/BROWSER.o
+ .rodata._.str.17
+                0x00d1c41a       0x16 obj/BROWSER.o
+ .rodata._.str.18
+                0x00d1c430       0x12 obj/BROWSER.o
+ .rodata._.str.19
+                0x00d1c442        0x6 obj/BROWSER.o
+ .rodata._configuration_bytes
+                0x00d1c448       0x20 obj/BROWSER.o
+ .rodata._lang  0x00d1c468        0x4 obj/BROWSER.o
+ .rodata._product
+                0x00d1c46c       0x26 obj/BROWSER.o
+ .rodata.libload
+                0x00d1c492       0x22 obj/crt0.o
+
+.init_array     0x00d1c4b4        0x0
+                [!provide]                        PROVIDE (__init_array_start = .)
+ *(.preinit_array)
+ *(SORT_BY_INIT_PRIORITY(.init_array.*))
+ *(.init_array)
+                [!provide]                        PROVIDE (__init_array_end = .)
+
+.fini_array     0x00d1c4b4        0x0
+                [!provide]                        PROVIDE (__fini_array_start = .)
+ *(SORT_BY_INIT_PRIORITY(.fini_array.*))
+ *(.fini_array)
+                [!provide]                        PROVIDE (__fini_array_end = .)
+                0x00d1c4b4                        ___data_low = .
+
+.data           0x00d1c4b4       0x68
+ *(.data .data.* .gnu.linkonce.d.*)
+ .data._cursor_x
+                0x00d1c4b4        0x3 obj/BROWSER.o
+ .data._cursor_y
+                0x00d1c4b7        0x3 obj/BROWSER.o
+ .data._current_url
+                0x00d1c4ba       0x40 obj/BROWSER.o
+ .data._status_msg
+                0x00d1c4fa        0x3 obj/BROWSER.o
+ .data._saved_x
+                0x00d1c4fd        0x3 obj/BROWSER.o
+ .data._saved_y
+                0x00d1c500        0x3 obj/BROWSER.o
+ *fill*         0x00d1c503        0x1 
+ .data._device  0x00d1c504       0x12 obj/BROWSER.o
+ .data._configs
+                0x00d1c516        0x3 obj/BROWSER.o
+ .data._strings
+                0x00d1c519        0x3 obj/BROWSER.o
+ *(.data1)
+                0x00d1c51c                        ___runprgm_reloc_start = .
+ *(.runprgm.reloc)
+                0x00d1c51c                        ___runprgm_reloc_end = .
+                0x00d1c51c                        ___data_high = .
+                0x00000068                        ___data_len = (___data_high - ___data_low)
+                0x00d052c6                        . = BSSHEAP_LOW
+                0x00d052c6                        ___bss_low = .
+
+.bss            0x00d052c6      0x16b
+ *(.dynbss)
+ *(.bss .bss.* .gnu.linkonce.b.*)
+ .bss._url_bar_active
+                0x00d052c6        0x1 obj/BROWSER.o
+ .bss._url_input
+                0x00d052c7       0x40 obj/BROWSER.o
+ .bss._url_input_len
+                0x00d05307        0x3 obj/BROWSER.o
+ .bss._needs_blit
+                0x00d0530a        0x1 obj/BROWSER.o
+ .bss._hold_duration
+                0x00d0530b        0x3 obj/BROWSER.o
+ .bss._click_anim
+                0x00d0530e        0x3 obj/BROWSER.o
+ .bss._cursor_saved
+                0x00d05311       0x6c obj/BROWSER.o
+ .bss._cursor_is_saved
+                0x00d0537d        0x1 obj/BROWSER.o
+ .bss._ep_in    0x00d0537e        0x3 obj/BROWSER.o
+ .bss._ep_out   0x00d05381        0x3 obj/BROWSER.o
+ .bss._tx_busy  0x00d05384        0x1 obj/BROWSER.o
+ .bss._rx_pending
+                0x00d05385        0x1 obj/BROWSER.o
+ .bss._rx_pkt   0x00d05386       0x40 obj/BROWSER.o
+ .bss._page_write_idx
+                0x00d053c6        0x3 obj/BROWSER.o
+ .bss._rx_complete.dynamic_status
+                0x00d053c9       0x28 obj/BROWSER.o
+ .bss._tx_pkt   0x00d053f1       0x40 obj/BROWSER.o
+ *(COMMON)
+                0x00d05431                        ___bss_high = .
+                0x0000016b                        ___bss_len = (___bss_high - ___bss_low)
+                0x00000001                        ASSERT ((. <= BSSHEAP_HIGH), Error: BSS exceed BSSHEAP_HIGH limit)
+                0x00d05431                        ___heap_low = .
+                0x00d13fd8                        . = BSSHEAP_HIGH
+                0x00d13fd8                        ___heap_high = .
+
+.runprgm
+ *(.runprgm.reloc)
+
+.debug_info
+ *(.debug_info .debug_info.*)
+
+.debug_abbrev
+ *(.debug_abbrev .debug_abbrev.*)
+
+.debug_line
+ *(.debug_line .debug_line.*)
+
+.debug_line_str
+ *(.debug_line_str .debug_line_str.*)
+
+.debug_str
+ *(.debug_str .debug_str.*)
+
+.debug_str_offsets
+ *(.debug_str_offsets .debug_str_offsets.*)
+
+.debug_addr
+ *(.debug_addr .debug_addr.*)
+
+.debug_aranges
+ *(.debug_aranges .debug_aranges.*)
+
+.debug_ranges
+ *(.debug_ranges .debug_ranges.*)
+
+.debug_rnglists
+ *(.debug_rnglists .debug_rnglists.*)
+
+.debug_loc
+ *(.debug_loc .debug_loc.*)
+
+.debug_loclists
+ *(.debug_loclists .debug_loclists.*)
+
+.debug_frame
+ *(.debug_frame .debug_frame.*)
+
+.debug_macro
+ *(.debug_macro .debug_macro.*)
+
+.debug_macinfo
+ *(.debug_macinfo .debug_macinfo.*)
+
+.debug_names
+ *(.debug_names .debug_names.*)
+
+.debug_pubnames
+ *(.debug_pubnames .debug_pubnames.*)
+
+.debug_pubtypes
+ *(.debug_pubtypes .debug_pubtypes.*)
+
+.debug_types
+ *(.debug_types .debug_types.*)
+
+.debug_sup
+ *(.debug_sup .debug_sup.*)
+
+.debug_cu_index
+ *(.debug_cu_index .debug_cu_index.*)
+
+.debug_tu_index
+ *(.debug_tu_index .debug_tu_index.*)
+
+.gdb_index
+ *(.gdb_index)
+
+.debug_gdb_scripts
+ *(.debug_gdb_scripts)
+
+.debug_abbrev.dwo
+ *(.debug_abbrev.dwo .debug_abbrev.dwo.*)
+
+.debug_info.dwo
+ *(.debug_info.dwo .debug_info.dwo.*)
+
+.debug_line.dwo
+ *(.debug_line.dwo .debug_line.dwo.*)
+
+.debug_loclists.dwo
+ *(.debug_loclists.dwo .debug_loclists.dwo.*)
+
+.debug_macro.dwo
+ *(.debug_macro.dwo .debug_macro.dwo.*)
+
+.debug_rnglists.dwo
+ *(.debug_rnglists.dwo .debug_rnglists.dwo.*)
+
+.debug_str.dwo
+ *(.debug_str.dwo .debug_str.dwo.*)
+
+.debug_str_offsets.dwo
+ *(.debug_str_offsets.dwo .debug_str_offsets.dwo.*)
+
+.eh_frame
+ *(.eh_frame)
+
+.eh_frame_hdr
+ *(.eh_frame_hdr)
+
+/DISCARD/
+ *(.comment)
+ *(.note*)
+                [!provide]                        PROVIDE (___runprgm_reloc_len = (___runprgm_reloc_end - ___runprgm_reloc_start))
+LOAD obj/BROWSER.o
+LOAD obj/crt0.o
+START GROUP
+LOAD /Users/ethan/CEdev/lib/libc/allocator_standard.a
+LOAD /Users/ethan/CEdev/lib/crt/libcrt.a
+LOAD /Users/ethan/CEdev/lib/ce/libce.a
+LOAD /Users/ethan/CEdev/lib/softfloat/libsoftfloat.a
+LOAD /Users/ethan/CEdev/lib/libc/libc_os.a
+LOAD /Users/ethan/CEdev/lib/libcxx/libcxx.a
+END GROUP
+OUTPUT(bin/BROWSER.obj elf32-z80)

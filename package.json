@@ -22,6 +22,7 @@
     "test:ti84": "node scripts/test-ti84.mjs"
   },
   "dependencies": {
+    "html2canvas": "^1.4.1",
     "next": "16.4.3",
     "react": "19.3.0",
     "react-dom": "19.3.0"
