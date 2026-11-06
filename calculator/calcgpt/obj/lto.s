@@ -914,23 +914,6 @@ _main:                                  ; @main
 	pop	hl
 	pop	hl
 	pop	hl
-	ld	hl, 2
-	push	hl
-	call	_gfx_SetColor
-	pop	hl
-	ld	hl, 240
-	push	hl
-	ld	hl, 1
-	push	hl
-	dec	hl
-	push	hl
-	ld	hl, 16
-	push	hl
-	call	_gfx_FillRectangle
-	pop	hl
-	pop	hl
-	pop	hl
-	pop	hl
 	ld	hl, _.str.16+1
 	push	hl
 	pop	iy
@@ -1038,24 +1021,275 @@ _main:                                  ; @main
 	.local	.LBB0_85
 .LBB0_85:                               ; %.loopexit26
                                         ;   in Loop: Header=BB0_111 Depth=1
-	ld	de, (_chat_count)
-	push	de
+	ld	hl, 1
+	push	hl
+	call	_gfx_SetColor
 	pop	hl
-	ld	bc, 1
+	ld	hl, 240
+	push	hl
+	ld	hl, 20
+	push	hl
+	or	a, a
+	sbc	hl, hl
+	push	hl
+	ld	hl, 16
+	push	hl
+	call	_gfx_FillRectangle
+	pop	hl
+	pop	hl
+	pop	hl
+	pop	hl
+	ld	hl, 2
+	push	hl
+	call	_gfx_SetColor
+	pop	hl
+	ld	hl, 240
+	push	hl
+	ld	hl, 1
+	push	hl
+	dec	hl
+	push	hl
+	ld	hl, 36
+	push	hl
+	call	_gfx_FillRectangle
+	pop	hl
+	pop	hl
+	pop	hl
+	pop	hl
+	ld	a, (_shift_mode)
+	bit	0, a
+	ld	hl, _.str.19+1
+	push	hl
+	pop	iy
+	ld	hl, 91
+	ld	de, 4
+	ld	(ix - 3), de
+	jr	z, .LBB0_88
+; %bb.86:                               ; %.preheader21.preheader
+                                        ;   in Loop: Header=BB0_111 Depth=1
+	ld	hl, _.str.18+1
+	push	hl
+	pop	iy
+	ld	hl, 91
+	ld	(ix - 3), de
+	.local	.LBB0_87
+.LBB0_87:                               ; %.preheader21
+                                        ;   Parent Loop BB0_111 Depth=1
+                                        ; =>  This Inner Loop Header: Depth=2
+	ld	(ix - 6), iy
+	ld	de, 1
+	push	de
+	ld	de, 3
+	push	de
+	push	hl
+	ld	hl, 22
+	push	hl
+	ld	hl, (ix - 3)
+	push	hl
+	ld	de, 8
+	add	hl, de
+	ld	(ix - 3), hl
+	call	_draw_char_rot
+	ld	iy, (ix - 6)
+	pop	hl
+	pop	hl
+	pop	hl
+	pop	hl
+	pop	hl
+	ld	a, (iy)
+	ld	l, a
+	inc	iy
+	or	a, a
+	jr	nz, .LBB0_87
+	jr	.LBB0_89
+	.local	.LBB0_88
+.LBB0_88:                               ; %.preheader23
+                                        ;   Parent Loop BB0_111 Depth=1
+                                        ; =>  This Inner Loop Header: Depth=2
+	ld	(ix - 6), iy
+	ld	de, 1
+	push	de
+	ld	de, 3
+	push	de
+	push	hl
+	ld	hl, 22
+	push	hl
+	ld	hl, (ix - 3)
+	push	hl
+	ld	de, 8
+	add	hl, de
+	ld	(ix - 3), hl
+	call	_draw_char_rot
+	ld	iy, (ix - 6)
+	pop	hl
+	pop	hl
+	pop	hl
+	pop	hl
+	pop	hl
+	ld	a, (iy)
+	ld	l, a
+	inc	iy
+	or	a, a
+	jr	nz, .LBB0_88
+	.local	.LBB0_89
+.LBB0_89:                               ; %.loopexit22
+                                        ;   in Loop: Header=BB0_111 Depth=1
+	ld	hl, (_input_len)
+	push	hl
+	pop	iy
+	ld	de, -22
+	add	iy, de
+	push	hl
+	pop	bc
+	ld	de, 23
+	or	a, a
+	sbc	hl, de
+	call	pe, __setflag
+	lea	de, iy + 0
+	jp	p, .LBB0_91
+; %bb.90:                               ; %.loopexit22
+                                        ;   in Loop: Header=BB0_111 Depth=1
+	or	a, a
+	sbc	hl, hl
+	ex	de, hl
+	.local	.LBB0_91
+.LBB0_91:                               ; %.loopexit22
+                                        ;   in Loop: Header=BB0_111 Depth=1
+	ld	hl, _input_buf
+	ld	(ix - 3), de
+	add	hl, de
+	ld	e, (hl)
+	ld	a, e
+	or	a, a
+	jr	z, .LBB0_97
+; %bb.92:                               ; %.preheader19.preheader
+                                        ;   in Loop: Header=BB0_111 Depth=1
+	push	bc
+	pop	iy
+	lea	hl, iy + 0
+	ld	bc, 23
 	or	a, a
 	sbc	hl, bc
 	call	pe, __setflag
-	jp	m, .LBB0_95
-; %bb.86:                               ; %.preheader23.preheader
+	jp	p, .LBB0_94
+; %bb.93:                               ; %.preheader19.preheader
+                                        ;   in Loop: Header=BB0_111 Depth=1
+	ld	iy, 22
+	.local	.LBB0_94
+.LBB0_94:                               ; %.preheader19.preheader
+                                        ;   in Loop: Header=BB0_111 Depth=1
+	ld	c, e
+	ld	de, _input_buf-21
+	ex	de, hl
+	lea	de, iy + 0
+	add	hl, de
+	ld	(ix - 12), hl
+	ld	de, 52
+	ex	de, hl
+	push	hl
+	pop	iy
+	.local	.LBB0_95
+.LBB0_95:                               ; %.preheader19
+                                        ;   Parent Loop BB0_111 Depth=1
+                                        ; =>  This Inner Loop Header: Depth=2
+	ld	de, 8
+	add	iy, de
+	ld	(ix - 6), iy
+	ld	de, 1
+	push	de
+	ld	de, 7
+	push	de
+	push	bc
+	ex	de, hl
+	ld	(ix - 9), de
+	ld	hl, 22
+	push	hl
+	push	de
+	call	_draw_char_rot
+	ld	iy, (ix - 6)
+	pop	hl
+	pop	hl
+	pop	hl
+	pop	hl
+	pop	hl
+	ld	hl, (ix - 9)
+	ld	de, 225
+	or	a, a
+	sbc	hl, de
+	jr	nc, .LBB0_97
+; %bb.96:                               ; %.preheader19
+                                        ;   in Loop: Header=BB0_95 Depth=2
+	ld	hl, (ix - 12)
+	ld	a, (hl)
+	ld	c, a
+	inc	hl
+	ld	(ix - 12), hl
+	or	a, a
+	lea	hl, iy + 0
+	jr	nz, .LBB0_95
+	.local	.LBB0_97
+.LBB0_97:                               ; %.loopexit20
+                                        ;   in Loop: Header=BB0_111 Depth=1
+	ld	a, (-851968)
+	ld	l, 1
+	and	a, l
+	ld	l, a
+	bit	0, l
+	ld	bc, 1
+	jr	nz, .LBB0_100
+; %bb.98:                               ;   in Loop: Header=BB0_111 Depth=1
+	ld	hl, (_input_len)
+	ld	de, (ix - 3)
+	or	a, a
+	sbc	hl, de
+	push	hl
+	pop	iy
+	ld	de, 23
+	or	a, a
+	sbc	hl, de
+	call	pe, __setflag
+	jp	p, .LBB0_100
+; %bb.99:                               ;   in Loop: Header=BB0_111 Depth=1
+	lea	hl, iy + 0
+	add	hl, hl
+	add	hl, hl
+	add	hl, hl
+	ld	de, 52
+	add	hl, de
+	push	bc
+	ld	de, 3
+	push	de
+	ld	de, 95
+	push	de
+	ld	de, 22
+	push	de
+	push	hl
+	call	_draw_char_rot
+	ld	bc, 1
+	pop	hl
+	pop	hl
+	pop	hl
+	pop	hl
+	pop	hl
+	.local	.LBB0_100
+.LBB0_100:                              ;   in Loop: Header=BB0_111 Depth=1
+	ld	de, (_chat_count)
+	push	de
+	pop	hl
+	or	a, a
+	sbc	hl, bc
+	call	pe, __setflag
+	jp	m, .LBB0_110
+; %bb.101:                              ; %.preheader18.preheader
                                         ;   in Loop: Header=BB0_111 Depth=1
 	ld	hl, _chat+1
 	ld	(ix - 3), hl
 	ld	bc, 0
-	.local	.LBB0_87
-.LBB0_87:                               ; %.preheader23
+	.local	.LBB0_102
+.LBB0_102:                              ; %.preheader18
                                         ;   Parent Loop BB0_111 Depth=1
                                         ; =>  This Loop Header: Depth=2
-                                        ;       Child Loop BB0_91 Depth 3
+                                        ;       Child Loop BB0_106 Depth 3
 	ld	(ix - 6), bc
 	push	bc
 	pop	hl
@@ -1080,28 +1314,28 @@ _main:                                  ; @main
 	call	__ishru
 	ld	(ix - 9), hl
 	cp	a, 3
-	jr	c, .LBB0_89
-; %bb.88:                               ; %.preheader23
-                                        ;   in Loop: Header=BB0_87 Depth=2
+	jr	c, .LBB0_104
+; %bb.103:                              ; %.preheader18
+                                        ;   in Loop: Header=BB0_102 Depth=2
 	ld	a, 7
 	ld	l, a
 	ld	(ix - 9), hl
-	.local	.LBB0_89
-.LBB0_89:                               ; %.preheader23
-                                        ;   in Loop: Header=BB0_87 Depth=2
+	.local	.LBB0_104
+.LBB0_104:                              ; %.preheader18
+                                        ;   in Loop: Header=BB0_102 Depth=2
 	ld	hl, (ix - 6)
 	add	hl, hl
 	add	hl, hl
 	add	hl, hl
-	ld	bc, 20
+	ld	bc, 39
 	add	hl, bc
 	ld	(ix - 12), hl
 	ld	l, (iy)
 	ld	a, l
 	or	a, a
-	jr	z, .LBB0_94
-; %bb.90:                               ; %.preheader.preheader
-                                        ;   in Loop: Header=BB0_87 Depth=2
+	jr	z, .LBB0_109
+; %bb.105:                              ; %.preheader.preheader
+                                        ;   in Loop: Header=BB0_102 Depth=2
 	ld	c, l
 	ld	hl, (ix - 3)
 	ld	(ix - 21), hl
@@ -1109,10 +1343,10 @@ _main:                                  ; @main
 	ex	de, hl
 	push	hl
 	pop	iy
-	.local	.LBB0_91
-.LBB0_91:                               ; %.preheader
+	.local	.LBB0_106
+.LBB0_106:                              ; %.preheader
                                         ;   Parent Loop BB0_111 Depth=1
-                                        ;     Parent Loop BB0_87 Depth=2
+                                        ;     Parent Loop BB0_102 Depth=2
                                         ; =>    This Inner Loop Header: Depth=3
 	ld	de, 8
 	add	iy, de
@@ -1138,9 +1372,9 @@ _main:                                  ; @main
 	ld	de, 225
 	or	a, a
 	sbc	hl, de
-	jr	nc, .LBB0_93
-; %bb.92:                               ; %.preheader
-                                        ;   in Loop: Header=BB0_91 Depth=3
+	jr	nc, .LBB0_108
+; %bb.107:                              ; %.preheader
+                                        ;   in Loop: Header=BB0_106 Depth=3
 	ld	hl, (ix - 21)
 	ld	a, (hl)
 	ld	c, a
@@ -1148,12 +1382,12 @@ _main:                                  ; @main
 	ld	(ix - 21), hl
 	or	a, a
 	lea	hl, iy + 0
-	jr	nz, .LBB0_91
-	.local	.LBB0_93
-.LBB0_93:                               ;   in Loop: Header=BB0_87 Depth=2
+	jr	nz, .LBB0_106
+	.local	.LBB0_108
+.LBB0_108:                              ;   in Loop: Header=BB0_102 Depth=2
 	ld	de, (_chat_count)
-	.local	.LBB0_94
-.LBB0_94:                               ;   in Loop: Header=BB0_87 Depth=2
+	.local	.LBB0_109
+.LBB0_109:                              ;   in Loop: Header=BB0_102 Depth=2
 	ld	bc, (ix - 6)
 	inc	bc
 	ld	iy, (ix - 3)
@@ -1164,261 +1398,10 @@ _main:                                  ; @main
 	or	a, a
 	sbc	hl, de
 	call	pe, __setflag
-	jp	m, .LBB0_87
-	.local	.LBB0_95
-.LBB0_95:                               ; %.loopexit24
-                                        ;   in Loop: Header=BB0_111 Depth=1
-	ld	hl, 1
-	push	hl
-	call	_gfx_SetColor
-	pop	hl
-	ld	hl, 240
-	push	hl
-	ld	hl, 20
-	push	hl
-	or	a, a
-	sbc	hl, hl
-	push	hl
-	ld	hl, 300
-	push	hl
-	call	_gfx_FillRectangle
-	pop	hl
-	pop	hl
-	pop	hl
-	pop	hl
-	ld	hl, 2
-	push	hl
-	call	_gfx_SetColor
-	pop	hl
-	ld	hl, 240
-	push	hl
-	ld	hl, 1
-	push	hl
-	dec	hl
-	push	hl
-	ld	hl, 299
-	push	hl
-	call	_gfx_FillRectangle
-	pop	hl
-	pop	hl
-	pop	hl
-	pop	hl
-	ld	a, (_shift_mode)
-	bit	0, a
-	ld	hl, _.str.19+1
-	push	hl
-	pop	iy
-	ld	hl, 91
-	ld	de, 4
-	ld	(ix - 3), de
-	jr	z, .LBB0_98
-; %bb.96:                               ; %.preheader19.preheader
-                                        ;   in Loop: Header=BB0_111 Depth=1
-	ld	hl, _.str.18+1
-	push	hl
-	pop	iy
-	ld	hl, 91
-	ld	(ix - 3), de
-	.local	.LBB0_97
-.LBB0_97:                               ; %.preheader19
-                                        ;   Parent Loop BB0_111 Depth=1
-                                        ; =>  This Inner Loop Header: Depth=2
-	ld	(ix - 6), iy
-	ld	de, 1
-	push	de
-	ld	de, 3
-	push	de
-	push	hl
-	ld	hl, 306
-	push	hl
-	ld	hl, (ix - 3)
-	push	hl
-	ld	de, 8
-	add	hl, de
-	ld	(ix - 3), hl
-	call	_draw_char_rot
-	ld	iy, (ix - 6)
-	pop	hl
-	pop	hl
-	pop	hl
-	pop	hl
-	pop	hl
-	ld	a, (iy)
-	ld	l, a
-	inc	iy
-	or	a, a
-	jr	nz, .LBB0_97
-	jr	.LBB0_99
-	.local	.LBB0_98
-.LBB0_98:                               ; %.preheader21
-                                        ;   Parent Loop BB0_111 Depth=1
-                                        ; =>  This Inner Loop Header: Depth=2
-	ld	(ix - 6), iy
-	ld	de, 1
-	push	de
-	ld	de, 3
-	push	de
-	push	hl
-	ld	hl, 306
-	push	hl
-	ld	hl, (ix - 3)
-	push	hl
-	ld	de, 8
-	add	hl, de
-	ld	(ix - 3), hl
-	call	_draw_char_rot
-	ld	iy, (ix - 6)
-	pop	hl
-	pop	hl
-	pop	hl
-	pop	hl
-	pop	hl
-	ld	a, (iy)
-	ld	l, a
-	inc	iy
-	or	a, a
-	jr	nz, .LBB0_98
-	.local	.LBB0_99
-.LBB0_99:                               ; %.loopexit20
-                                        ;   in Loop: Header=BB0_111 Depth=1
-	ld	hl, (_input_len)
-	push	hl
-	pop	iy
-	ld	de, -22
-	add	iy, de
-	push	hl
-	pop	bc
-	ld	de, 23
-	or	a, a
-	sbc	hl, de
-	call	pe, __setflag
-	lea	de, iy + 0
-	jp	p, .LBB0_101
-; %bb.100:                              ; %.loopexit20
-                                        ;   in Loop: Header=BB0_111 Depth=1
-	or	a, a
-	sbc	hl, hl
-	ex	de, hl
-	.local	.LBB0_101
-.LBB0_101:                              ; %.loopexit20
-                                        ;   in Loop: Header=BB0_111 Depth=1
-	ld	hl, _input_buf
-	ld	(ix - 3), de
-	add	hl, de
-	ld	e, (hl)
-	ld	a, e
-	or	a, a
-	jr	z, .LBB0_107
-; %bb.102:                              ; %.preheader18.preheader
-                                        ;   in Loop: Header=BB0_111 Depth=1
-	push	bc
-	pop	iy
-	lea	hl, iy + 0
-	ld	bc, 23
-	or	a, a
-	sbc	hl, bc
-	call	pe, __setflag
-	jp	p, .LBB0_104
-; %bb.103:                              ; %.preheader18.preheader
-                                        ;   in Loop: Header=BB0_111 Depth=1
-	ld	iy, 22
-	.local	.LBB0_104
-.LBB0_104:                              ; %.preheader18.preheader
-                                        ;   in Loop: Header=BB0_111 Depth=1
-	ld	c, e
-	ld	de, _input_buf-21
-	ex	de, hl
-	lea	de, iy + 0
-	add	hl, de
-	ld	(ix - 12), hl
-	ld	de, 52
-	ex	de, hl
-	push	hl
-	pop	iy
-	.local	.LBB0_105
-.LBB0_105:                              ; %.preheader18
-                                        ;   Parent Loop BB0_111 Depth=1
-                                        ; =>  This Inner Loop Header: Depth=2
-	ld	de, 8
-	add	iy, de
-	ld	(ix - 6), iy
-	ld	de, 1
-	push	de
-	ld	de, 7
-	push	de
-	push	bc
-	ex	de, hl
-	ld	(ix - 9), de
-	ld	hl, 306
-	push	hl
-	push	de
-	call	_draw_char_rot
-	ld	iy, (ix - 6)
-	pop	hl
-	pop	hl
-	pop	hl
-	pop	hl
-	pop	hl
-	ld	hl, (ix - 9)
-	ld	de, 225
-	or	a, a
-	sbc	hl, de
-	jr	nc, .LBB0_107
-; %bb.106:                              ; %.preheader18
-                                        ;   in Loop: Header=BB0_105 Depth=2
-	ld	hl, (ix - 12)
-	ld	a, (hl)
-	ld	c, a
-	inc	hl
-	ld	(ix - 12), hl
-	or	a, a
-	lea	hl, iy + 0
-	jr	nz, .LBB0_105
-	.local	.LBB0_107
-.LBB0_107:                              ; %.loopexit
-                                        ;   in Loop: Header=BB0_111 Depth=1
-	ld	a, (-851968)
-	ld	l, 1
-	and	a, l
-	ld	l, a
-	bit	0, l
-	jr	nz, .LBB0_110
-; %bb.108:                              ;   in Loop: Header=BB0_111 Depth=1
-	ld	hl, (_input_len)
-	ld	de, (ix - 3)
-	or	a, a
-	sbc	hl, de
-	push	hl
-	pop	de
-	ld	bc, 23
-	or	a, a
-	sbc	hl, bc
-	call	pe, __setflag
-	jp	p, .LBB0_110
-; %bb.109:                              ;   in Loop: Header=BB0_111 Depth=1
-	ex	de, hl
-	add	hl, hl
-	add	hl, hl
-	add	hl, hl
-	ld	de, 52
-	add	hl, de
-	ld	de, 1
-	push	de
-	ld	de, 3
-	push	de
-	ld	de, 95
-	push	de
-	ld	de, 306
-	push	de
-	push	hl
-	call	_draw_char_rot
-	pop	hl
-	pop	hl
-	pop	hl
-	pop	hl
-	pop	hl
+	jp	m, .LBB0_102
 	.local	.LBB0_110
-.LBB0_110:                              ;   in Loop: Header=BB0_111 Depth=1
+.LBB0_110:                              ; %.loopexit
+                                        ;   in Loop: Header=BB0_111 Depth=1
 	ld	hl, 1
 	push	hl
 	call	_gfx_Blit
@@ -1430,11 +1413,11 @@ _main:                                  ; @main
                                         ;     Child Loop BB0_27 Depth 2
                                         ;     Child Loop BB0_80 Depth 2
                                         ;     Child Loop BB0_83 Depth 2
+                                        ;     Child Loop BB0_88 Depth 2
                                         ;     Child Loop BB0_87 Depth 2
-                                        ;       Child Loop BB0_91 Depth 3
-                                        ;     Child Loop BB0_98 Depth 2
-                                        ;     Child Loop BB0_97 Depth 2
-                                        ;     Child Loop BB0_105 Depth 2
+                                        ;     Child Loop BB0_95 Depth 2
+                                        ;     Child Loop BB0_102 Depth 2
+                                        ;       Child Loop BB0_106 Depth 3
 	call	_usb_HandleEvents
 	call	_os_GetCSC
 	ld	d, a
@@ -1518,7 +1501,7 @@ JTI0_0:
 	d24	.LBB0_79
 	d24	.LBB0_79
 	d24	.LBB0_79
-	d24	.LBB0_79
+	d24	.LBB0_46
 	d24	.LBB0_41
 	d24	.LBB0_113
 	d24	.LBB0_79
@@ -2407,7 +2390,7 @@ JTI6_0:
 	.balign	1
 	.local	_.str
 _.str:
-	.asciz	"CalcGPT QWERTY v2.0"
+	.asciz	"CalcGPT QWERTY v2.1"
 
 	.section	.rodata._.str.1,"a",@progbits
 	.balign	1
@@ -2419,7 +2402,7 @@ _.str.1:
 	.balign	1
 	.local	_.str.2
 _.str.2:
-	.asciz	"+:Shift ^:Space -:Backspace"
+	.asciz	"+:Shift ^:Space ZOOM/-:Del"
 
 	.section	.rodata._.str.3,"a",@progbits
 	.balign	1
@@ -2794,8 +2777,8 @@ _font8x8_basic:
 	.extern	_usb_HandleEvents
 	.extern	_gfx_FillRectangle
 	.extern	_llvm.smax.i24
-	.extern	_llvm.memmove.p0.p0.i24
 	.extern	_memcpy
+	.extern	_llvm.memmove.p0.p0.i24
 	.extern	_gfx_SetPalette
 	.extern	__ishru
 	.extern	_llvm.eh.sjlj.lsda

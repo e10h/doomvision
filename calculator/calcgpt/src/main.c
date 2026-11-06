@@ -271,15 +271,39 @@ static void draw_ui(void) {
     /* Clear full screen (Black = color 0) */
     gfx_FillScreen(0);
 
-    /* Top Header Bar (ly=0..16) */
+    /* Top Header Bar (ly=0..15) */
     fill_rect_rot(0, 0, LOGICAL_WIDTH, 16, 1); /* Dark Teal */
-    fill_rect_rot(0, 16, LOGICAL_WIDTH, 1, 2);  /* Neon Green line */
-
     draw_string_rot(4, 4, "CalcGPT", 3, 1);
     draw_string_rot(68, 4, "|", 4, 1);
     draw_string_rot(80, 4, status_str, 4, 1);
 
-    /* Chat Messages (ly=18..298, up to 35 lines) */
+    /* Top Input Bar (ly=16..36) - flipped to the top! */
+    fill_rect_rot(0, 16, LOGICAL_WIDTH, 20, 1); /* Dark Teal */
+    fill_rect_rot(0, 36, LOGICAL_WIDTH, 1, 2);   /* Neon Green separator line */
+
+    /* Prompt indicator */
+    if (shift_mode) {
+        draw_string_rot(4, 22, "[A] >", 3, 1);
+    } else {
+        draw_string_rot(4, 22, "[a] >", 3, 1);
+    }
+
+    /* Input text (scrolls horizontally if longer than 22 chars) */
+    int disp_offset = 0;
+    if (input_len > 22) {
+        disp_offset = input_len - 22;
+    }
+    draw_string_rot(52, 22, input_buf + disp_offset, 7, 1);
+
+    /* Blinking Cursor */
+    if ((rtc_Seconds & 1) == 0) {
+        int cursor_x = 52 + (input_len - disp_offset) * 8;
+        if (cursor_x + 8 <= LOGICAL_WIDTH) {
+            draw_char_rot(cursor_x, 22, '_', 3, 1);
+        }
+    }
+
+    /* Chat Messages below the input box (ly=39..319, up to 35 lines) */
     for (i = 0; i < chat_count; i++) {
         uint8_t fg;
         switch (chat[i].color) {
@@ -288,33 +312,7 @@ static void draw_ui(void) {
             case 3: fg = 6; break; /* Red/Orange for errors */
             default: fg = 7; break; /* White */
         }
-        draw_string_rot(4, 20 + i * 8, chat[i].text, fg, 0);
-    }
-
-    /* Bottom Input Bar (ly=300..320) */
-    fill_rect_rot(0, 300, LOGICAL_WIDTH, 20, 1); /* Dark Teal */
-    fill_rect_rot(0, 299, LOGICAL_WIDTH, 1, 2);   /* Neon Green line */
-
-    /* Prompt indicator */
-    if (shift_mode) {
-        draw_string_rot(4, 306, "[A] >", 3, 1);
-    } else {
-        draw_string_rot(4, 306, "[a] >", 3, 1);
-    }
-
-    /* Input text (scrolls horizontally if longer than 22 chars) */
-    int disp_offset = 0;
-    if (input_len > 22) {
-        disp_offset = input_len - 22;
-    }
-    draw_string_rot(52, 306, input_buf + disp_offset, 7, 1);
-
-    /* Blinking Cursor */
-    if ((rtc_Seconds & 1) == 0) {
-        int cursor_x = 52 + (input_len - disp_offset) * 8;
-        if (cursor_x + 8 <= LOGICAL_WIDTH) {
-            draw_char_rot(cursor_x, 306, '_', 3, 1);
-        }
+        draw_string_rot(4, 39 + i * 8, chat[i].text, fg, 0);
     }
 
     gfx_BlitBuffer();
@@ -429,11 +427,11 @@ int main(void) {
     gfx_palette[6] = gfx_RGBTo1555(255, 80, 80);   /* 6: Red error text */
     gfx_palette[7] = gfx_RGBTo1555(240, 244, 248); /* 7: Pure White text */
 
-    append_chat_string("CalcGPT QWERTY v2.0", 3);
+    append_chat_string("CalcGPT QWERTY v2.1", 3);
     append_newline(3);
     append_chat_string("Sideways layout: 240x320", 4);
     append_newline(4);
-    append_chat_string("+:Shift ^:Space -:Backspace", 4);
+    append_chat_string("+:Shift ^:Space ZOOM/-:Del", 4);
     append_newline(4);
     append_chat_string("ENTER:Send CLEAR:Clear Y=:Exit", 4);
     append_newline(4);
@@ -459,8 +457,8 @@ int main(void) {
             break; /* [Y=] quits to TI-OS */
         } else if (key == sk_Add) {
             shift_mode = !shift_mode; /* [+] toggles uppercase / lowercase */
-        } else if (key == sk_Sub) {
-            /* [-] is Backspace */
+        } else if (key == sk_Sub || key == sk_Zoom) {
+            /* [ZOOM] and [-] are Backspace */
             if (input_len > 0) {
                 input_len--;
                 input_buf[input_len] = '\0';
