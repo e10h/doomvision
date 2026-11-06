@@ -42,14 +42,6 @@ _gfx_SetDraw:
 	.type _gfx_Blit, @function
 _gfx_Blit:
 	jp 33
-	.global _gfx_PrintChar
-	.type _gfx_PrintChar, @function
-_gfx_PrintChar:
-	jp 42
-	.global _gfx_PrintString
-	.type _gfx_PrintString, @function
-_gfx_PrintString:
-	jp 51
 	.global _gfx_PrintStringXY
 	.type _gfx_PrintStringXY, @function
 _gfx_PrintStringXY:
@@ -58,10 +50,6 @@ _gfx_PrintStringXY:
 	.type _gfx_SetTextFGColor, @function
 _gfx_SetTextFGColor:
 	jp 63
-	.global _gfx_HorizLine
-	.type _gfx_HorizLine, @function
-_gfx_HorizLine:
-	jp 93
 	.global _gfx_FillRectangle
 	.type _gfx_FillRectangle, @function
 _gfx_FillRectangle:

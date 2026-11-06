@@ -8,6 +8,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "wire.h"
+#include "font8x8.h"
 
 /* USB Descriptors */
 static const uint8_t configuration_bytes[32] = {
@@ -55,14 +56,21 @@ static cgpt_packet_t rx_pkt;
 static volatile bool rx_pending = false;
 static volatile bool tx_busy = false;
 
-/* Chat Line Buffer */
-#define MAX_LINES 23
-#define LINE_COLS 39
-#define MAX_INPUT 128
+/*
+ * Rotated Display Metrics (Sideways: 90 degrees CCW)
+ * Logical Width:  240 (0..239)
+ * Logical Height: 320 (0..319)
+ * 8x8 font gives 29 columns and 35 lines of chat!
+ */
+#define LOGICAL_WIDTH  240
+#define LOGICAL_HEIGHT 320
+#define MAX_LINES      35
+#define LINE_COLS      29
+#define MAX_INPUT      128
 
 typedef struct {
     char text[LINE_COLS + 1];
-    uint8_t color; /* 0=White, 1=Cyan (user), 2=Green (AI), 3=Red (err) */
+    uint8_t color; /* 1=Cyan (user), 2=Green (AI), 3=Red (err), 4=Gray */
 } ChatLine;
 
 static ChatLine chat[MAX_LINES];
@@ -70,25 +78,61 @@ static int chat_count = 0;
 static char input_buf[MAX_INPUT + 1];
 static int input_len = 0;
 
-enum TypingMode {
-    MODE_UPPER = 0,
-    MODE_LOWER = 1,
-    MODE_NUM = 2
-};
-static enum TypingMode typing_mode = MODE_UPPER;
+static bool shift_mode = false; /* false = lowercase [a], true = uppercase [A] */
 static const char *status_str = "Waiting for USB link…";
 
-/* Forward declaration */
+/* Forward declarations */
 static void queue_rx(void);
+static void append_newline(uint8_t color);
+static void append_chat_char(char c, uint8_t color);
+static void append_chat_string(const char *str, uint8_t color);
+
+/* Rotated Drawing Primitives */
+static void fill_rect_rot(int lx, int ly, int lw, int lh, uint8_t color) {
+    int px = 319 - (ly + lh - 1);
+    int py = lx;
+    int pw = lh;
+    int ph = lw;
+    if (px < 0) { pw += px; px = 0; }
+    if (py < 0) { ph += py; py = 0; }
+    if (px + pw > 320) pw = 320 - px;
+    if (py + ph > 240) ph = 240 - py;
+    if (pw > 0 && ph > 0) {
+        gfx_SetColor(color);
+        gfx_FillRectangle(px, py, pw, ph);
+    }
+}
+
+static void draw_char_rot(int lx, int ly, char c, uint8_t fg, uint8_t bg) {
+    uint8_t uc = (uint8_t)c;
+    if (uc > 127) uc = '?';
+    const uint8_t *glyph = font8x8_basic[uc];
+    int r, col;
+    for (r = 0; r < 8; r++) {
+        uint8_t b = glyph[r];
+        int px = 319 - (ly + r);
+        if (px < 0 || px >= 320) continue;
+        for (col = 0; col < 8; col++) {
+            int py = lx + col;
+            if (py < 0 || py >= 240) continue;
+            gfx_vbuffer[py][px] = (b & (1 << col)) ? fg : bg;
+        }
+    }
+}
+
+static void draw_string_rot(int lx, int ly, const char *str, uint8_t fg, uint8_t bg) {
+    while (*str) {
+        if (lx + 8 > LOGICAL_WIDTH) break;
+        draw_char_rot(lx, ly, *str++, fg, bg);
+        lx += 8;
+    }
+}
 
 static usb_error_t tx_complete(usb_endpoint_t ep, usb_transfer_status_t status, size_t n, void *arg) {
     (void)ep; (void)status; (void)n; (void)arg;
     tx_busy = false;
     return USB_SUCCESS;
 }
-
-static void append_chat_char(char c, uint8_t color);
-static void append_newline(uint8_t color);
 
 static usb_error_t rx_complete(usb_endpoint_t ep, usb_transfer_status_t status, size_t n, void *arg) {
     (void)ep; (void)arg;
@@ -224,22 +268,18 @@ static void append_chat_string(const char *str, uint8_t color) {
 
 static void draw_ui(void) {
     int i;
-    gfx_FillScreen(0); /* Black background */
+    /* Clear full screen (Black = color 0) */
+    gfx_FillScreen(0);
 
-    /* Top Header Bar */
-    gfx_SetColor(1); /* Dark Teal */
-    gfx_FillRectangle(0, 0, 320, 18);
-    gfx_SetColor(2); /* Neon Green line */
-    gfx_HorizLine(0, 18, 320);
+    /* Top Header Bar (ly=0..16) */
+    fill_rect_rot(0, 0, LOGICAL_WIDTH, 16, 1); /* Dark Teal */
+    fill_rect_rot(0, 16, LOGICAL_WIDTH, 1, 2);  /* Neon Green line */
 
-    gfx_SetTextFGColor(3); /* Neon Green text */
-    gfx_PrintStringXY("CalcGPT", 6, 4);
+    draw_string_rot(4, 4, "CalcGPT", 3, 1);
+    draw_string_rot(68, 4, "|", 4, 1);
+    draw_string_rot(80, 4, status_str, 4, 1);
 
-    gfx_SetTextFGColor(4); /* Light Gray */
-    gfx_PrintStringXY("| ", 72, 4);
-    gfx_PrintString(status_str);
-
-    /* Chat Messages */
+    /* Chat Messages (ly=18..298, up to 35 lines) */
     for (i = 0; i < chat_count; i++) {
         uint8_t fg;
         switch (chat[i].color) {
@@ -248,28 +288,33 @@ static void draw_ui(void) {
             case 3: fg = 6; break; /* Red/Orange for errors */
             default: fg = 7; break; /* White */
         }
-        gfx_SetTextFGColor(fg);
-        gfx_PrintStringXY(chat[i].text, 6, 22 + i * 8);
+        draw_string_rot(4, 20 + i * 8, chat[i].text, fg, 0);
     }
 
-    /* Bottom Input Bar */
-    gfx_SetColor(1);
-    gfx_FillRectangle(0, 222, 320, 18);
-    gfx_SetColor(2);
-    gfx_HorizLine(0, 221, 320);
+    /* Bottom Input Bar (ly=300..320) */
+    fill_rect_rot(0, 300, LOGICAL_WIDTH, 20, 1); /* Dark Teal */
+    fill_rect_rot(0, 299, LOGICAL_WIDTH, 1, 2);   /* Neon Green line */
 
-    /* Mode Badge */
-    gfx_SetTextFGColor(3);
-    if (typing_mode == MODE_UPPER) gfx_PrintStringXY("[A] > ", 6, 226);
-    else if (typing_mode == MODE_LOWER) gfx_PrintStringXY("[a] > ", 6, 226);
-    else gfx_PrintStringXY("[1] > ", 6, 226);
+    /* Prompt indicator */
+    if (shift_mode) {
+        draw_string_rot(4, 306, "[A] >", 3, 1);
+    } else {
+        draw_string_rot(4, 306, "[a] >", 3, 1);
+    }
 
-    gfx_SetTextFGColor(7);
-    gfx_PrintString(input_buf);
+    /* Input text (scrolls horizontally if longer than 22 chars) */
+    int disp_offset = 0;
+    if (input_len > 22) {
+        disp_offset = input_len - 22;
+    }
+    draw_string_rot(52, 306, input_buf + disp_offset, 7, 1);
 
     /* Blinking Cursor */
     if ((rtc_Seconds & 1) == 0) {
-        gfx_PrintChar('_');
+        int cursor_x = 52 + (input_len - disp_offset) * 8;
+        if (cursor_x + 8 <= LOGICAL_WIDTH) {
+            draw_char_rot(cursor_x, 306, '_', 3, 1);
+        }
     }
 
     gfx_BlitBuffer();
@@ -278,7 +323,7 @@ static void draw_ui(void) {
 static void send_prompt(void) {
     if (input_len == 0 || !ep_in || tx_busy) return;
 
-    /* Display prompt in cyan with word wrapping, then drop to new line */
+    /* Display prompt in cyan with word wrapping, then drop to next line */
     append_chat_string("> ", 1);
     append_chat_string(input_buf, 1);
     append_newline(2);
@@ -295,70 +340,75 @@ static void send_prompt(void) {
     input_buf[0] = '\0';
 }
 
-static char map_scancode(uint8_t key) {
-    /* Standard Alpha mapping */
-    if (typing_mode == MODE_UPPER || typing_mode == MODE_LOWER) {
-        char ch = 0;
-        switch (key) {
-            case sk_Math: ch = 'A'; break;
-            case sk_Apps: ch = 'B'; break;
-            case sk_Prgm: ch = 'C'; break;
-            case sk_Recip: ch = 'D'; break;
-            case sk_Sin: ch = 'E'; break;
-            case sk_Cos: ch = 'F'; break;
-            case sk_Tan: ch = 'G'; break;
-            case sk_Power: ch = 'H'; break;
-            case sk_Square: ch = 'I'; break;
-            case sk_Comma: ch = 'J'; break;
-            case sk_LParen: ch = 'K'; break;
-            case sk_RParen: ch = 'L'; break;
-            case sk_Div: ch = 'M'; break;
-            case sk_Log: ch = 'N'; break;
-            case sk_7: ch = 'O'; break;
-            case sk_8: ch = 'P'; break;
-            case sk_9: ch = 'Q'; break;
-            case sk_Mul: ch = 'R'; break;
-            case sk_Ln: ch = 'S'; break;
-            case sk_4: ch = 'T'; break;
-            case sk_5: ch = 'U'; break;
-            case sk_6: ch = 'V'; break;
-            case sk_Sub: ch = 'W'; break;
-            case sk_Store: ch = 'X'; break;
-            case sk_1: ch = 'Y'; break;
-            case sk_2: ch = 'Z'; break;
-            case sk_0: ch = ' '; break;
-            case sk_DecPnt: ch = '.'; break;
-            case sk_Chs: ch = '?'; break;
-            default: break;
-        }
-        if (ch && typing_mode == MODE_LOWER && ch >= 'A' && ch <= 'Z') {
-            ch = ch + ('a' - 'A');
-        }
-        return ch;
-    }
-
-    /* Numeric mapping */
+/*
+ * Sideways QWERTY Keypad Matrix Mapping:
+ * Held 90 degrees CCW:
+ * Top Row:    0 to window ==> Q to P
+ * Middle Row: . to del    ==> A to L
+ * Bottom Row: (-) to var  ==> Z to M
+ * Control:
+ *   [+]     ==> Shift toggle ([a] <-> [A])
+ *   [^]     ==> Space
+ *   [-]     ==> Backspace
+ *   [CLEAR] ==> Clear line
+ *   [ENTER] ==> Send message
+ *   [*]     ==> '*'
+ *   [/]     ==> '/'
+ *   [MATH]  ==> '?'
+ *   [x^-1]  ==> '.'
+ *   [LOG]   ==> ','
+ *   [LN]    ==> '\''
+ */
+static char map_qwerty_key(uint8_t key) {
+    char ch = 0;
     switch (key) {
-        case sk_0: return '0';
-        case sk_1: return '1';
-        case sk_2: return '2';
-        case sk_3: return '3';
-        case sk_4: return '4';
-        case sk_5: return '5';
-        case sk_6: return '6';
-        case sk_7: return '7';
-        case sk_8: return '8';
-        case sk_9: return '9';
-        case sk_Add: return '+';
-        case sk_Sub: return '-';
-        case sk_Mul: return '*';
-        case sk_Div: return '/';
-        case sk_DecPnt: return '.';
-        case sk_LParen: return '(';
-        case sk_RParen: return ')';
-        case sk_Comma: return ',';
+        /* Row 1: 0 to window ==> Q to P */
+        case sk_0:        ch = 'Q'; break;
+        case sk_1:        ch = 'W'; break;
+        case sk_4:        ch = 'E'; break;
+        case sk_7:        ch = 'R'; break;
+        case sk_Comma:    ch = 'T'; break;
+        case sk_Sin:      ch = 'Y'; break;
+        case sk_Apps:     ch = 'U'; break;
+        case sk_GraphVar: ch = 'I'; break;
+        case sk_Mode:     ch = 'O'; break;
+        case sk_Window:   ch = 'P'; break;
+
+        /* Row 2: . to del ==> A to L */
+        case sk_DecPnt:   ch = 'A'; break;
+        case sk_2:        ch = 'S'; break;
+        case sk_5:        ch = 'D'; break;
+        case sk_8:        ch = 'F'; break;
+        case sk_LParen:   ch = 'G'; break;
+        case sk_Cos:      ch = 'H'; break;
+        case sk_Prgm:     ch = 'J'; break;
+        case sk_Stat:     ch = 'K'; break;
+        case sk_Del:      ch = 'L'; break;
+
+        /* Row 3: (-) to var ==> Z to M */
+        case sk_Chs:      ch = 'Z'; break;
+        case sk_3:        ch = 'X'; break;
+        case sk_6:        ch = 'C'; break;
+        case sk_9:        ch = 'V'; break;
+        case sk_RParen:   ch = 'B'; break;
+        case sk_Tan:      ch = 'N'; break;
+        case sk_Vars:     ch = 'M'; break;
+
+        /* Punctuation & symbols */
+        case sk_Math:     ch = '?'; break;
+        case sk_Recip:    ch = '.'; break;
+        case sk_Log:      ch = ','; break;
+        case sk_Ln:       ch = '\''; break;
+        case sk_Mul:      ch = '*'; break;
+        case sk_Div:      ch = '/'; break;
+
         default: return 0;
     }
+
+    if (!shift_mode && ch >= 'A' && ch <= 'Z') {
+        ch = ch + ('a' - 'A');
+    }
+    return ch;
 }
 
 int main(void) {
@@ -370,20 +420,22 @@ int main(void) {
 
     /* Setup Custom Color Palette */
     gfx_SetPalette(gfx_palette, 256, 0);
-    gfx_palette[0] = gfx_RGBTo1555(12, 15, 20);   /* 0: Background dark */
-    gfx_palette[1] = gfx_RGBTo1555(16, 28, 34);   /* 1: Dark Teal header/footer */
-    gfx_palette[2] = gfx_RGBTo1555(0, 255, 136);  /* 2: Neon Green highlight */
-    gfx_palette[3] = gfx_RGBTo1555(0, 255, 136);  /* 3: Neon Green text */
-    gfx_palette[4] = gfx_RGBTo1555(130, 160, 150);/* 4: Gray text */
-    gfx_palette[5] = gfx_RGBTo1555(0, 216, 255);  /* 5: Cyan user text */
+    gfx_palette[0] = gfx_RGBTo1555(12, 15, 20);    /* 0: Background dark */
+    gfx_palette[1] = gfx_RGBTo1555(16, 28, 34);    /* 1: Dark Teal header/footer */
+    gfx_palette[2] = gfx_RGBTo1555(0, 255, 136);   /* 2: Neon Green highlight */
+    gfx_palette[3] = gfx_RGBTo1555(0, 255, 136);   /* 3: Neon Green text */
+    gfx_palette[4] = gfx_RGBTo1555(130, 160, 150); /* 4: Gray text */
+    gfx_palette[5] = gfx_RGBTo1555(0, 216, 255);   /* 5: Cyan user text */
     gfx_palette[6] = gfx_RGBTo1555(255, 80, 80);   /* 6: Red error text */
-    gfx_palette[7] = gfx_RGBTo1555(240, 244, 248);/* 7: Pure White text */
+    gfx_palette[7] = gfx_RGBTo1555(240, 244, 248); /* 7: Pure White text */
 
-    append_chat_string("CalcGPT Gemini v1.0", 3);
+    append_chat_string("CalcGPT QWERTY v2.0", 3);
     append_newline(3);
-    append_chat_string("Connect USB cable to host.", 4);
+    append_chat_string("Sideways layout: 240x320", 4);
     append_newline(4);
-    append_chat_string("ALPHA: toggle A/a/1 | ENTER: send", 4);
+    append_chat_string("+:Shift ^:Space -:Backspace", 4);
+    append_newline(4);
+    append_chat_string("ENTER:Send CLEAR:Clear Y=:Exit", 4);
     append_newline(4);
 
     /* Initialize USB in device mode */
@@ -403,22 +455,31 @@ int main(void) {
         usb_HandleEvents();
 
         key = os_GetCSC();
-        if (key == sk_Mode) {
-            break; /* Exit */
-        } else if (key == sk_Alpha) {
-            typing_mode = (typing_mode + 1) % 3;
-        } else if (key == sk_Del) {
+        if (key == sk_Yequ) {
+            break; /* [Y=] quits to TI-OS */
+        } else if (key == sk_Add) {
+            shift_mode = !shift_mode; /* [+] toggles uppercase / lowercase */
+        } else if (key == sk_Sub) {
+            /* [-] is Backspace */
             if (input_len > 0) {
                 input_len--;
                 input_buf[input_len] = '\0';
             }
+        } else if (key == sk_Power) {
+            /* [^] is Space */
+            if (input_len < MAX_INPUT) {
+                input_buf[input_len++] = ' ';
+                input_buf[input_len] = '\0';
+            }
         } else if (key == sk_Clear) {
+            /* [CLEAR] clears line */
             input_len = 0;
             input_buf[0] = '\0';
         } else if (key == sk_Enter) {
+            /* [ENTER] sends message */
             send_prompt();
         } else if (key != 0) {
-            char ch = map_scancode(key);
+            char ch = map_qwerty_key(key);
             if (ch && input_len < MAX_INPUT) {
                 input_buf[input_len++] = ch;
                 input_buf[input_len] = '\0';
@@ -432,4 +493,3 @@ int main(void) {
     gfx_End();
     return 0;
 }
-

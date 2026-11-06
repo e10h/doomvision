@@ -23,4 +23,4 @@ obj/src/main.c.bc: src/main.c /Users/ethan/CEdev/include/usbdrvce.h \
   /Users/ethan/CEdev/include/ti/ui.h \
   /Users/ethan/CEdev/include/ti/tokens.h \
   /Users/ethan/CEdev/include/ti/vars.h \
-  /Users/ethan/CEdev/include/string.h src/wire.h
+  /Users/ethan/CEdev/include/string.h src/wire.h src/font8x8.h
