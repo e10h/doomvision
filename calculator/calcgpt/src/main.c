@@ -147,6 +147,7 @@ static usb_error_t rx_complete(usb_endpoint_t ep, usb_transfer_status_t status, 
             if (len > USB_PAYLOAD_MAX) len = USB_PAYLOAD_MAX;
 
             if (type == PKT_REPLY_START) {
+                tx_busy = false;
                 status_str = "Gemini typing…";
                 if (chat_count > 0 && strlen(chat[chat_count - 1].text) > 0) {
                     append_newline(2);
@@ -158,12 +159,14 @@ static usb_error_t rx_complete(usb_endpoint_t ep, usb_transfer_status_t status, 
                     append_chat_char((char)rx_pkt.payload[i], 2);
                 }
             } else if (type == PKT_REPLY_END) {
+                tx_busy = false;
                 status_str = "Online (Ready)";
                 if (chat_count > 0 && strlen(chat[chat_count - 1].text) > 0) {
                     append_newline(2);
                 }
             } else if (type == PKT_ERROR) {
                 uint16_t i;
+                tx_busy = false;
                 status_str = "Gemini Error";
                 append_newline(3);
                 for (i = 0; i < len; i++) {
@@ -171,6 +174,7 @@ static usb_error_t rx_complete(usb_endpoint_t ep, usb_transfer_status_t status, 
                 }
                 append_newline(3);
             } else if (type == PKT_PONG) {
+                tx_busy = false;
                 status_str = "Online (Ready)";
             }
         }
@@ -195,9 +199,10 @@ static usb_error_t usb_event(usb_event_t e, void *data, void *arg) {
         usb_device_t host = usb_FindDevice(NULL, NULL, USB_SKIP_HUBS);
         ep_in = usb_GetDeviceEndpoint(host, 0x81);
         ep_out = usb_GetDeviceEndpoint(host, 0x02);
-        if (ep_in) usb_SetEndpointFlags(ep_in, USB_AUTO_TERMINATE);
-        if (ep_out) usb_SetEndpointFlags(ep_out, USB_AUTO_TERMINATE);
+        if (ep_in) usb_SetEndpointFlags(ep_in, USB_MANUAL_TERMINATE);
+        if (ep_out) usb_SetEndpointFlags(ep_out, USB_MANUAL_TERMINATE);
         usb_configured = true;
+        tx_busy = false;
         status_str = "Connected to host";
         queue_rx();
     } else if (e == USB_DEVICE_DISCONNECTED_EVENT || e == USB_DEVICE_DISABLED_EVENT) {
@@ -205,6 +210,7 @@ static usb_error_t usb_event(usb_event_t e, void *data, void *arg) {
         ep_out = NULL;
         usb_configured = false;
         rx_pending = false;
+        tx_busy = false;
         status_str = "Waiting for USB link…";
     }
     return USB_SUCCESS;
@@ -319,7 +325,8 @@ static void draw_ui(void) {
 }
 
 static void send_prompt(void) {
-    if (input_len == 0 || !ep_in || tx_busy) return;
+    usb_error_t err;
+    if (input_len == 0 || !ep_in) return;
 
     /* Display prompt in cyan with word wrapping, then drop to next line */
     append_chat_string("> ", 1);
@@ -329,7 +336,8 @@ static void send_prompt(void) {
     status_str = "Sending prompt…";
     cgpt_init_packet(&tx_pkt, PKT_PROMPT_START, 0, input_buf, input_len);
     tx_busy = true;
-    if (usb_ScheduleBulkTransfer(ep_in, &tx_pkt, USB_PACKET_SIZE, tx_complete, NULL) != USB_SUCCESS) {
+    err = usb_ScheduleBulkTransfer(ep_in, &tx_pkt, USB_PACKET_SIZE, tx_complete, NULL);
+    if (err != USB_SUCCESS) {
         tx_busy = false;
         status_str = "USB Tx error";
     }

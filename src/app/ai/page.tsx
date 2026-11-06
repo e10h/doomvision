@@ -297,9 +297,9 @@ export default function AiPage() {
         // Check if prompt is ready (null-terminated or full line)
         if (type === PKT_PROMPT_START || type === PKT_PROMPT_DATA) {
           if (textChunk.includes("\n") || textChunk.includes("\0") || len < 56) {
-            const prompt = promptBufferRef.current.replace(/[\0\r\n]+$/, "");
+            const prompt = promptBufferRef.current.replace(/[\0\r\n]+/g, " ").trim();
             promptBufferRef.current = "";
-            if (prompt.trim()) {
+            if (prompt) {
               void handlePromptRef.current(prompt);
             }
           }

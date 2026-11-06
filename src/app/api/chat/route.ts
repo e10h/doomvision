@@ -41,27 +41,57 @@ export async function POST(req: NextRequest) {
       url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyOrToken}`;
     }
 
-    const contents = [
-      ...history.map((h: { role: string; content: string }) => ({
-        role: h.role === "assistant" ? "model" : "user",
-        parts: [{ text: h.content }],
-      })),
-      { role: "user", parts: [{ text: message }] },
-    ];
+    // Build and sanitize multi-turn conversation contents
+    const rawTurns: { role: "user" | "model"; text: string }[] = [];
+    if (Array.isArray(history)) {
+      for (const h of history) {
+        const text = typeof h?.content === "string" ? h.content.trim() : "";
+        if (!text) continue;
+        const role = h.role === "assistant" || h.role === "model" ? "model" : "user";
+        rawTurns.push({ role, text });
+      }
+    }
+    rawTurns.push({ role: "user", text: message.trim() });
+
+    // Ensure strict user/model alternation and valid starting role (user)
+    const contents: { role: "user" | "model"; parts: [{ text: string }] }[] = [];
+    for (const turn of rawTurns) {
+      if (contents.length === 0) {
+        if (turn.role !== "user") continue; // First turn must be user
+        contents.push({ role: turn.role, parts: [{ text: turn.text }] });
+      } else {
+        const lastTurn = contents[contents.length - 1];
+        if (lastTurn.role === turn.role) {
+          // Merge consecutive same-role turns to avoid 400 Bad Request
+          lastTurn.parts[0].text += "\n" + turn.text;
+        } else {
+          contents.push({ role: turn.role, parts: [{ text: turn.text }] });
+        }
+      }
+    }
+
+    const requestBody: Record<string, unknown> = {
+      contents,
+      generationConfig: {
+        maxOutputTokens: 512,
+        temperature: 0.7,
+      },
+    };
+
+    if (isGoogleCloudToken) {
+      requestBody.systemInstruction = {
+        parts: [{ text: DEFAULT_SYSTEM_INSTRUCTION }],
+      };
+    } else {
+      requestBody.system_instruction = {
+        parts: [{ text: DEFAULT_SYSTEM_INSTRUCTION }],
+      };
+    }
 
     const response = await fetch(url, {
       method: "POST",
       headers,
-      body: JSON.stringify({
-        system_instruction: {
-          parts: [{ text: DEFAULT_SYSTEM_INSTRUCTION }],
-        },
-        contents,
-        generationConfig: {
-          maxOutputTokens: 512,
-          temperature: 0.7,
-        },
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
