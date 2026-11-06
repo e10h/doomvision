@@ -7,26 +7,39 @@ Avoid complex Markdown like tables, bold, italics, or headers; simple lists and 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { message, history = [], apiKey: clientApiKey } = body;
+    const { message, history = [], apiKey: clientKey, projectId: clientProject } = body;
 
     if (!message || typeof message !== "string") {
       return NextResponse.json({ error: "Missing or invalid prompt message" }, { status: 400 });
     }
 
-    const apiKey = clientApiKey || process.env.GEMINI_API_KEY;
-    if (!apiKey) {
+    const keyOrToken = (clientKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_ACCESS_TOKEN || "").trim();
+    const isGoogleCloudToken = keyOrToken.startsWith("ya29.");
+    const projectId = clientProject || process.env.GOOGLE_CLOUD_PROJECT || "intense-terra-512718-j7";
+    const location = process.env.GOOGLE_CLOUD_LOCATION || "us-central1";
+
+    if (!keyOrToken && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
       return NextResponse.json(
         {
           error:
-            "No Gemini API key provided. Set GEMINI_API_KEY in your environment or enter it in the CalcGPT settings on the page.",
+            "No credential provided. Enter a Google AI Studio API key (AIzaSy...) from a personal account, or a Google Cloud Bearer token (ya29...).",
         },
         { status: 401 }
       );
     }
 
-    // Try Gemini 2.5 Flash, fallback to 1.5 Flash if needed
-    const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    let url: string;
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const model = process.env.GEMINI_MODEL || (isGoogleCloudToken ? "gemini-2.0-flash-001" : "gemini-2.5-flash");
+
+    if (isGoogleCloudToken) {
+      // Vertex AI / Google Cloud Agent Platform endpoint
+      url = `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/${model}:generateContent`;
+      headers["Authorization"] = `Bearer ${keyOrToken}`;
+    } else {
+      // Google AI Studio endpoint
+      url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyOrToken}`;
+    }
 
     const contents = [
       ...history.map((h: { role: string; content: string }) => ({
@@ -38,7 +51,7 @@ export async function POST(req: NextRequest) {
 
     const response = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({
         system_instruction: {
           parts: [{ text: DEFAULT_SYSTEM_INSTRUCTION }],

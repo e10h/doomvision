@@ -461,12 +461,12 @@ export default function AiPage() {
           }}
         >
           <label style={{ fontSize: 13, color: "#8b98ac", display: "block", marginBottom: 8 }}>
-            Gemini API Key (optional if configured in Vercel / server environment variable <code>GEMINI_API_KEY</code>):
+            Google Credential (Personal Gemini API Key <code>AIzaSy...</code> or Google Cloud Token <code>ya29...</code>):
           </label>
           <div style={{ display: "flex", gap: 8 }}>
             <input
               type="password"
-              placeholder="AIzaSy..."
+              placeholder="AIzaSy... (Personal AI Studio) or ya29... (Google Cloud ADC token)"
               value={apiKey}
               onChange={(e) => saveApiKey(e.target.value)}
               style={{
@@ -493,12 +493,9 @@ export default function AiPage() {
               Done
             </button>
           </div>
-          <small style={{ color: "#64748b", marginTop: 6, display: "block" }}>
-            Get a free API key at{" "}
-            <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" style={{ color: "#00d8ff" }}>
-              aistudio.google.com
-            </a>
-            . Stored locally in your browser only.
+          <small style={{ color: "#64748b", marginTop: 6, display: "block", lineHeight: 1.5 }}>
+            • <strong>Easiest / Free:</strong> Open <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" style={{ color: "#00d8ff" }}>aistudio.google.com</a> under a personal <code>@gmail.com</code> account (API keys are blocked on enterprise/university accounts).<br/>
+            • <strong>Google Cloud (ADC):</strong> In terminal run <code>gcloud auth application-default print-access-token</code> and paste the <code>ya29...</code> token here.
           </small>
         </div>
       )}
