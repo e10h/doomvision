@@ -70,6 +70,14 @@ export default function AiPage() {
   const promptBufferRef = useRef<string>("");
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
+  const apiKeyRef = useRef(apiKey);
+  apiKeyRef.current = apiKey;
+
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
+
+  const handlePromptRef = useRef<(prompt: string) => Promise<void>>(null!);
+
   useEffect(() => {
     const saved = localStorage.getItem("calcgpt_gemini_key");
     if (saved) setApiKey(saved);
@@ -154,14 +162,16 @@ export default function AiPage() {
     setMessages((prev) => [...prev, userMsg]);
     setStatus("Calling Gemini 2.5 Flash…");
 
+    const effectiveKey = (apiKeyRef.current || localStorage.getItem("calcgpt_gemini_key") || apiKey || "").trim();
+
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: prompt,
-          apiKey: apiKey || undefined,
-          history: messages
+          apiKey: effectiveKey || undefined,
+          history: messagesRef.current
             .filter((m) => m.role === "user" || m.role === "assistant")
             .slice(-6),
         }),
@@ -193,6 +203,8 @@ export default function AiPage() {
       await sendTextToCalculator(err, true);
     }
   };
+
+  handlePromptRef.current = handlePromptFromCalculator;
 
   const connect = async () => {
     const usb = (navigator as Navigator & { usb?: Usb }).usb;
@@ -288,7 +300,7 @@ export default function AiPage() {
             const prompt = promptBufferRef.current.replace(/[\0\r\n]+$/, "");
             promptBufferRef.current = "";
             if (prompt.trim()) {
-              void handlePromptFromCalculator(prompt);
+              void handlePromptRef.current(prompt);
             }
           }
         }
