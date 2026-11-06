@@ -64,16 +64,16 @@ export default function BrowserPage() {
   const [error, setError] = useState("");
   const [deviceName, setDeviceName] = useState("");
   const [currentUrl, setCurrentUrl] = useState("home");
-  const [inputUrl, setInputUrl] = useState("https://en.wikipedia.org");
+  const [inputUrl, setInputUrl] = useState("home");
   const [streaming, setStreaming] = useState(false);
   const [fps, setFps] = useState(0);
 
   const deviceRef = useRef<UsbDevice | null>(null);
   const activeRef = useRef(false);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const frameCountRef = useRef(0);
+  const streamingRef = useRef(false);
 
   // Send packet to Calculator
   const sendPacket = useCallback(async (type: number, seq: number, payload: Uint8Array) => {
@@ -128,13 +128,15 @@ export default function BrowserPage() {
 
   // Capture iframe and send frame over WebUSB
   const captureAndStreamFrame = useCallback(async () => {
-    if (!iframeRef.current || !activeRef.current || streaming) return;
+    if (!iframeRef.current || !activeRef.current || streamingRef.current) return;
 
     const iframe = iframeRef.current;
     const doc = iframe.contentDocument;
     if (!doc || !doc.body) return;
 
+    streamingRef.current = true;
     setStreaming(true);
+
     try {
       const canvas = await html2canvas(doc.body, {
         width: SCREEN_W,
@@ -144,20 +146,22 @@ export default function BrowserPage() {
         scale: 1,
         logging: false,
         useCORS: true,
+        allowTaint: false,
         backgroundColor: "#ffffff",
+        imageTimeout: 1500,
       });
 
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
       const imgData = ctx.getImageData(0, 0, SCREEN_W, SCREEN_H);
 
-      // Mirror to preview canvas
+      // Mirror to preview canvas on laptop UI
       if (previewCanvasRef.current) {
         const prevCtx = previewCanvasRef.current.getContext("2d");
         prevCtx?.drawImage(canvas, 0, 0);
       }
 
-      // Convert & RLE Compress
+      // Convert to RGB332 & RLE Compress
       const rgb332 = quantizeToRGB332(imgData.data);
       const rleData = encodeRLE(rgb332);
 
@@ -177,9 +181,10 @@ export default function BrowserPage() {
     } catch (e) {
       console.error("Frame capture error:", e);
     } finally {
+      streamingRef.current = false;
       setStreaming(false);
     }
-  }, [sendPacket, streaming]);
+  }, [sendPacket]);
 
   // FPS ticker
   useEffect(() => {
@@ -200,14 +205,32 @@ export default function BrowserPage() {
       if (type === PKT_CLICK) {
         const x = payload[0] | (payload[1] << 8);
         const y = payload[2] | (payload[3] << 8);
-        if (doc) {
-          const el = doc.elementFromPoint(x, y);
+
+        // Account for 16px calculator chrome bar at top
+        const webX = x;
+        const webY = Math.max(0, y - 16);
+
+        console.log("[Calc Click]", { x, y, webX, webY });
+
+        if (doc && iframe) {
+          const el = doc.elementFromPoint(webX, webY);
           if (el) {
-            (el as HTMLElement).click();
-            // Re-capture after slight delay to allow navigation/hover
-            setTimeout(() => {
-              void captureAndStreamFrame();
-            }, 300);
+            console.log("[Click Target]", el.tagName, (el as HTMLElement).innerText?.slice(0, 30));
+            const a = el.closest("a");
+            if (a && a.href) {
+              console.log("[Navigating Link]", a.href);
+              iframe.src = a.href;
+            } else {
+              // Dispatch realistic pointer click
+              const evtInit = { bubbles: true, cancelable: true, clientX: webX, clientY: webY, view: win };
+              el.dispatchEvent(new MouseEvent("mousedown", evtInit));
+              el.dispatchEvent(new MouseEvent("mouseup", evtInit));
+              el.dispatchEvent(new MouseEvent("click", evtInit));
+              (el as HTMLElement).focus?.();
+
+              // Trigger frame update
+              setTimeout(() => void captureAndStreamFrame(), 200);
+            }
           }
         }
       } else if (type === PKT_SCROLL) {
@@ -215,15 +238,15 @@ export default function BrowserPage() {
         const delta = view.getInt16(0, true);
         if (win) {
           win.scrollBy({ top: delta, behavior: "auto" });
-          setTimeout(() => {
-            void captureAndStreamFrame();
-          }, 50);
+          setTimeout(() => void captureAndStreamFrame(), 50);
         }
       } else if (type === PKT_NAV_URL) {
         const urlStr = new TextDecoder().decode(payload).replace(/\0/g, "").trim();
-        if (urlStr) {
+        if (urlStr && iframe) {
+          console.log("[Navigating URL]", urlStr);
           setCurrentUrl(urlStr);
           setInputUrl(urlStr);
+          iframe.src = `/api/browser/proxy?url=${encodeURIComponent(urlStr)}`;
         }
       } else if (type === PKT_NAV_BACK) {
         win?.history.back();
@@ -288,7 +311,7 @@ export default function BrowserPage() {
       // Send initial URL and page frame
       const urlBytes = new TextEncoder().encode(currentUrl);
       await sendPacket(PKT_URL_UPDATE, 0, urlBytes);
-      setTimeout(() => void captureAndStreamFrame(), 500);
+      setTimeout(() => void captureAndStreamFrame(), 600);
 
       // Read loop on Endpoint 1 (Bulk IN)
       while (activeRef.current && device.opened) {
@@ -339,7 +362,11 @@ export default function BrowserPage() {
   const handleNavigateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputUrl.trim()) return;
-    setCurrentUrl(inputUrl.trim());
+    const url = inputUrl.trim();
+    setCurrentUrl(url);
+    if (iframeRef.current) {
+      iframeRef.current.src = `/api/browser/proxy?url=${encodeURIComponent(url)}`;
+    }
   };
 
   return (
@@ -550,7 +577,13 @@ export default function BrowserPage() {
             ref={iframeRef}
             src={`/api/browser/proxy?url=${encodeURIComponent(currentUrl)}`}
             onLoad={() => {
-              setTimeout(() => void captureAndStreamFrame(), 500);
+              try {
+                const title = iframeRef.current?.contentDocument?.title || currentUrl;
+                void sendPacket(PKT_URL_UPDATE, 0, new TextEncoder().encode(title.slice(0, 30)));
+              } catch {}
+              // Capture and stream multiple passes as assets load
+              setTimeout(() => void captureAndStreamFrame(), 200);
+              setTimeout(() => void captureAndStreamFrame(), 800);
             }}
             style={{
               width: SCREEN_W,
@@ -585,9 +618,6 @@ export default function BrowserPage() {
           />
         </div>
       </div>
-
-      {/* Hidden processing canvas */}
-      <canvas ref={canvasRef} width={SCREEN_W} height={SCREEN_H} style={{ display: "none" }} />
 
       {/* Calculator Setup & Key Guide */}
       <section style={{ marginTop: 32, fontSize: 13, color: "#8b98ac", lineHeight: 1.8 }}>
