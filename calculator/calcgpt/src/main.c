@@ -87,10 +87,10 @@ static void append_newline(uint8_t color);
 static void append_chat_char(char c, uint8_t color);
 static void append_chat_string(const char *str, uint8_t color);
 
-/* Rotated Drawing Primitives */
+/* Rotated Drawing Primitives (Sideways: 90 degrees Clockwise) */
 static void fill_rect_rot(int lx, int ly, int lw, int lh, uint8_t color) {
-    int px = 319 - (ly + lh - 1);
-    int py = lx;
+    int px = ly;
+    int py = 239 - (lx + lw - 1);
     int pw = lh;
     int ph = lw;
     if (px < 0) { pw += px; px = 0; }
@@ -110,10 +110,10 @@ static void draw_char_rot(int lx, int ly, char c, uint8_t fg, uint8_t bg) {
     int r, col;
     for (r = 0; r < 8; r++) {
         uint8_t b = glyph[r];
-        int px = 319 - (ly + r);
+        int px = ly + r;
         if (px < 0 || px >= 320) continue;
         for (col = 0; col < 8; col++) {
-            int py = lx + col;
+            int py = 239 - (lx + col);
             if (py < 0 || py >= 240) continue;
             gfx_vbuffer[py][px] = (b & (1 << col)) ? fg : bg;
         }

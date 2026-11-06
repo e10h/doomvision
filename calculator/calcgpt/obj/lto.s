@@ -908,7 +908,6 @@ _main:                                  ; @main
 	or	a, a
 	sbc	hl, hl
 	push	hl
-	ld	hl, 304
 	push	hl
 	call	_gfx_FillRectangle
 	pop	hl
@@ -925,7 +924,7 @@ _main:                                  ; @main
 	push	hl
 	dec	hl
 	push	hl
-	ld	hl, 303
+	ld	hl, 16
 	push	hl
 	call	_gfx_FillRectangle
 	pop	hl
@@ -1180,6 +1179,7 @@ _main:                                  ; @main
 	or	a, a
 	sbc	hl, hl
 	push	hl
+	ld	hl, 300
 	push	hl
 	call	_gfx_FillRectangle
 	pop	hl
@@ -1196,7 +1196,7 @@ _main:                                  ; @main
 	push	hl
 	dec	hl
 	push	hl
-	ld	hl, 20
+	ld	hl, 299
 	push	hl
 	call	_gfx_FillRectangle
 	pop	hl
@@ -1863,11 +1863,11 @@ _tx_complete:                           ; @tx_complete
 	.type	_draw_char_rot,@function        ; -- Begin function draw_char_rot
 _draw_char_rot:                         ; @draw_char_rot
 ; %bb.0:
-	ld	hl, -13
+	ld	hl, -10
 	call	__frameset
-	ld	iy, (ix + 6)
 	ld	a, (ix + 12)
-	ld	de, _font8x8_basic
+	ld	iy, _font8x8_basic
+	ld	de, 76480
 	cp	a, 0
 	call	pe, __setflag
 	jp	p, .LBB4_2
@@ -1883,45 +1883,45 @@ _draw_char_rot:                         ; @draw_char_rot
 	add	hl, hl
 	push	hl
 	pop	bc
-	ex	de, hl
-	add	hl, bc
-	ld	(ix - 12), hl
-	lea	hl, iy + 0
+	add	iy, bc
+	ld	(ix - 9), iy
+	ld	iy, (ix + 9)
+	add	iy, de
+	ld	hl, (ix + 6)
 	ld	bc, 320
 	call	__imulu
-	ld	de, 319
-	add	hl, de
-	ld	de, (ix + 9)
+	ex	de, hl
+	lea	hl, iy + 0
 	or	a, a
 	sbc	hl, de
-	ld	(ix - 3), hl
-	ld	bc, 0
+	ex	de, hl
+	ld	iy, 0
 	.local	.LBB4_3
 .LBB4_3:                                ; =>This Loop Header: Depth=1
                                         ;     Child Loop BB4_5 Depth 2
-	ld	(ix - 6), bc
-	push	bc
-	pop	hl
+	ld	(ix - 3), iy
 	ld	bc, (ix + 9)
-	add	hl, bc
-	ld	de, 320
+	add	iy, bc
+	lea	hl, iy + 0
+	ld	bc, 320
 	or	a, a
-	sbc	hl, de
+	sbc	hl, bc
 	jr	nc, .LBB4_10
 ; %bb.4:                                ;   in Loop: Header=BB4_3 Depth=1
-	ld	hl, (ix - 12)
-	ld	de, (ix - 6)
-	add	hl, de
+	ld	hl, (ix - 9)
+	ld	bc, (ix - 3)
+	add	hl, bc
 	ld	a, (hl)
-	ld	(ix - 13), a
-	ld	hl, (ix - 3)
+	ld	(ix - 10), a
+	push	de
+	pop	iy
 	ld	bc, 0
+	ld	(ix - 6), de
 	.local	.LBB4_5
 .LBB4_5:                                ;   Parent Loop BB4_3 Depth=1
                                         ; =>  This Inner Loop Header: Depth=2
-	ld	(ix - 9), hl
-	add	iy, bc
-	lea	hl, iy + 0
+	ld	hl, (ix + 6)
+	add	hl, bc
 	ld	de, 240
 	or	a, a
 	sbc	hl, de
@@ -1929,7 +1929,7 @@ _draw_char_rot:                         ; @draw_char_rot
 ; %bb.6:                                ;   in Loop: Header=BB4_5 Depth=2
 	ld	hl, 1
 	call	__ishl
-	ld	e, (ix - 13)
+	ld	e, (ix - 10)
 	ld	a, l
 	and	a, e
 	ld	l, a
@@ -1941,37 +1941,32 @@ _draw_char_rot:                         ; @draw_char_rot
 	.local	.LBB4_8
 .LBB4_8:                                ;   in Loop: Header=BB4_5 Depth=2
 	ld	hl, (-1900524)
-	ld	de, (ix - 9)
+	lea	de, iy + 0
 	add	hl, de
 	ld	(hl), a
 	.local	.LBB4_9
 .LBB4_9:                                ;   in Loop: Header=BB4_5 Depth=2
 	inc	bc
-	ld	iy, (ix - 9)
-	ld	de, 320
+	ld	de, -320
 	add	iy, de
 	push	bc
 	pop	hl
 	ld	de, 8
 	or	a, a
 	sbc	hl, de
-	lea	hl, iy + 0
-	ld	iy, (ix + 6)
+	ld	de, (ix - 6)
 	jr	nz, .LBB4_5
 	.local	.LBB4_10
 .LBB4_10:                               ; %.loopexit
                                         ;   in Loop: Header=BB4_3 Depth=1
-	ld	bc, (ix - 6)
-	inc	bc
-	ld	hl, (ix - 3)
-	dec	hl
-	ld	(ix - 3), hl
-	push	bc
-	pop	hl
-	ld	de, 8
+	ld	iy, (ix - 3)
+	inc	iy
+	inc	de
+	lea	hl, iy + 0
+	ld	bc, 8
 	or	a, a
-	sbc	hl, de
-	jp	nz, .LBB4_3
+	sbc	hl, bc
+	jr	nz, .LBB4_3
 ; %bb.11:
 	ld	sp, ix
 	pop	ix
